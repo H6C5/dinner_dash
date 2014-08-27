@@ -206,7 +206,6 @@ admin_rachel = User.create(first_name:     "Rachel",
                   city:                   "Denver",
                   state:                  "CO",
                   zipcode:                "80202")
-                  role:                   "default")
 
 order1 = User.find(2).orders.create(status: "paid", receiving: "Delivery")
 order2 = User.find(2).orders.create(status: "paid", receiving: "Delivery")
@@ -224,4 +223,5 @@ order1.cart_items.create(item_id: 2)
 order1.cart_items.create(item_id: 4)
 order2.cart_items.create(item_id: 4)
 order2.cart_items.create(item_id: 7)
+
 puts "============= Seeding Data End ============="

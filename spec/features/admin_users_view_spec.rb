@@ -11,10 +11,6 @@ describe "admin_user_dashboard", type: :feature do
                 password_confirmation: "userpassword", first_name: "Roger",
                 last_name: "Doger", role: "default", street: "1511 Blake st.",
                 city: "Denver", state: "CO", zipcode: "80123")
-    User.create(email: "admin@example.com", password: "admin123",
-                password_confirmation: "admin123", first_name: "Big",
-                last_name: "Boss", role: "admin", street: "1512 Blake st.",
-                city: "Denver", state: "CO", zipcode: "80123")
 
     @users = User.all
     @user  = User.first
@@ -43,7 +39,7 @@ describe "admin_user_dashboard", type: :feature do
   it 'has links to other dashboards' do
     admin_login
     visit administrator_admins_path
-    expect(page).to have_link('Admin Home',       href: administrator_admins_path)
+    save_and_open_page
     expect(page).to have_link('Manage Items', href: administrator_items_path)
     expect(page).to have_link('Manage Categories', href: administrator_categories_path)
     expect(page).to have_link('Manage Orders',     href: administrator_orders_path)
@@ -51,6 +47,7 @@ describe "admin_user_dashboard", type: :feature do
 
   it 'can find a users address' do
     admin_login
+    visit administrator_users_path
     within('//table') do
       first(:link, 'Profile').click
     end

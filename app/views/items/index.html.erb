@@ -10,7 +10,7 @@
       <tr>
         <td colspan="5"><h5><%= category.title %></h5><i><%= category.description %></i></td>
       </tr>
-      <% category.items.each do |item| %>
+      <% category.items.active.each do |item| %>
       <tr>
         <td><%= image_tag item.image.url(:user_thumb) %></td>
         <td><%= link_to item.title, item_path(item) %></td>

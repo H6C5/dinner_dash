@@ -14,11 +14,11 @@ describe "admin_menu", type: :feature do
     @category   = Category.first
 
     item1 =Item.create(title:"Chocolate yummy yumm", description: "Chocolate so good you'll wanna slap yo mama", price: 400, image: "icecreamslug.com", status: 1)
-    item1 =Item.create(title:"Vanilla willya please", description: "Vanilla is the bomb for you mom!", price: 325, image: "icecreamslug.com", status: 1)
-    item1 =Item.create(title:"Strawberry berry tasty", description: "Strawbeeeeeerrrry! Is good for me!", price: 450, image: "icecreamslug.com", status: 1)
+    item2 =Item.create(title:"Vanilla willya please", description: "Vanilla is the bomb for you mom!", price: 325, image: "icecreamslug.com", status: 1)
+    item3 =Item.create(title:"Strawberry berry tasty", description: "Strawbeeeeeerrrry! Is good for me!", price: 450, image: "icecreamslug.com", status: 1)
 
     @items = Item.all
-    @item  = Item.new
+    @item  = Item.first
 
     category1.items << item1
     category2.items << item2
@@ -103,7 +103,7 @@ describe "admin_menu", type: :feature do
     item         = @items.first
     deleted_item = item.title
 
-    within('//table') do
+    within("//table") do
       first(:link, 'Delete').click
     end
 
@@ -121,7 +121,7 @@ describe "admin_menu", type: :feature do
     admin_login
     visit administrator_items_path
     item         = @items.first
-    deleted_item = item.title
+    retired_item = item.title
 
     visit items_path
     expect(page).to have_content(item.title)
@@ -134,6 +134,6 @@ describe "admin_menu", type: :feature do
     click_button('Submit')
 
     visit items_path
-    expect(page).to_not have_content(deleted_item)
+    expect(page).to_not have_content(retired_item)
   end
 end
