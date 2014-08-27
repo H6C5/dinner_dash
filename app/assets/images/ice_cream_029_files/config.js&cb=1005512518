@@ -1,0 +1,2880 @@
+!function(e) {
+    var n;
+    "function" == typeof require ? require([ "jquery", "vendor/misc/spin", "has", "lib/social", "be/responsive", "be/postmessage", "be/login", "be/logout", "nbd/util/media" ], function() {
+        n = e.apply(this, arguments), n.require();
+    }) : (n = e.call(this, jQuery, Spinner), $.Core && "object" == typeof $.Core.Events ? $.Core.Events.bind("resources.beforeLoaded", n.init) : jQuery(n.init), 
+    this.Network = n);
+}(function(e, n, t, o, i, a, s, r, d) {
+    var c = {
+        Model: {},
+        View: {
+            Popup: {},
+            Action: {},
+            Cover: {}
+        },
+        Templates: {},
+        Constants: {},
+        CCN_COLORS: {
+            adweek: "#ED1D25",
+            aiga: "#DA4D49",
+            artcenter: "#F96610",
+            artinstitutes: "#ED1C24",
+            studentshow: "#00CDB5",
+            sva: "#01A3DF",
+            scad: "#669933",
+            aau: "#cc0018",
+            nda: "#f47d20",
+            pantone: "#292929",
+            pratt: "#eaac1f",
+            ringling: "#17BBBB",
+            losandes: "#666666",
+            philau: "#a90011",
+            wacom: "#01a7df",
+            saic: "#F36BC0",
+            corcoran: "#ec0b6d",
+            fit: "#0057a6"
+        },
+        POPUPS: {
+            Message: "Messages",
+            Spam: "Spams"
+        },
+        ACTIONS: {
+            "Follow.User": "UserFollows",
+            "Follow.Collection": "CollectionFollows",
+            "Follow.Site": "SiteFollows"
+        },
+        RESPONSES: {
+            403: function() {
+                return e(document.body).hasClass("activity-page") ? void 0 : e(document.body).hasClass("iframe-view") && e(document.body).hasClass("logged-out") ? void window.open("/signup") : void (window.location.href = "/signup");
+            },
+            417: function() {
+                e.ajax("/utilities/unverified").done(function(n) {
+                    require([ "be/modal/simple" ], function(t) {
+                        var o = e("<div>").append(n.html), i = o.find(".popup-header").text();
+                        o.find(".popup-header, #popup-btn-wrap").remove(), t({
+                            title: i,
+                            html: o.html(),
+                            buttons: [ {
+                                label: "Close",
+                                classes: [ "form-button-default", "js-confirm" ]
+                            } ]
+                        });
+                    });
+                });
+            }
+        },
+        init: function() {
+            var t = !1;
+            n.defaults = {
+                color: "#008cff"
+            }, e(document.body).hasClass("ccn_gallery2") && (t = e(document.body).attr("ccn"), 
+            "undefined" != typeof c.CCN_COLORS[t] && (n.defaults.color = c.CCN_COLORS[t])), 
+            c.initPlaceholders(), c.initPing(), c.initZen(), c.View.Widget.init(), e(document).bind("ajaxError", function(n, t) {
+                var o, i = "" !== t.responseText ? e.parseJSON(t.responseText) : {};
+                o = i ? c.RESPONSES[i.response_code] : c.RESPONSES[500], e.isFunction(o) && o(i);
+            }), e.Core.Events.bind("resources.loaded", function() {
+                c.initCommon("POPUPS", "Popup"), c.initCommon("ACTIONS", "Action");
+            });
+        },
+        initPing: function() {
+            function n() {
+                if ("undefined" != typeof window.adobeIMS && "undefined" != typeof window.adobeid) {
+                    var e, n = null, t = window.adobeIMS, o = {
+                        client_id: t.getClientID()
+                    };
+                    e = t.getUrlForApiCall(t.IMSAPIs.check, n, o), t._ajaxGet(e, function(e) {
+                        return "object" == typeof e && e.access_token ? void s.setToken(e.access_token) : r();
+                    }, "jsonp");
+                }
+            }
+            function t() {
+                e.ajax({
+                    url: "/v1/ping",
+                    type: "GET",
+                    dataType: "html"
+                });
+                try {
+                    n();
+                } catch (t) {
+                    console.log(t);
+                }
+            }
+            var o = 6e5;
+            e(document.body).hasClass("logged-in") && setInterval(t, o);
+        },
+        initMobile: function() {},
+        initPlaceholders: function() {
+            var n = function() {
+                var n = void 0 !== this._supported ? this._supported : "undefined" != typeof e('<input type="text">')[0].placeholder;
+                return this._supported = n, n;
+            };
+            n() || e(document.body).find("input[placeholder]").each(function() {
+                var n = e(this);
+                n.defaultValue(n.attr("placeholder"));
+            });
+        },
+        initCommon: function(n, t) {
+            e.each(this[n], function(n, o) {
+                var i = n.split("."), a = c.View[t], s = t, r = !1, d = !0;
+                e.each(i, function(e, n) {
+                    return a && a[n] ? (a = a[n], r = n, void (s = s + "." + n)) : (d = !1, !1);
+                }), d === !0 && "function" == typeof a && (c[o] = new e.Core.Collection("Network.View." + s), 
+                a.init());
+            });
+        },
+        disabledUpload: function(n, t) {
+            return n.uploads && n.uploads.disabled === !0 ? (t === !0 && e.Core.popup({
+                header: n.uploads.disabled_header || "Upload Maintenance",
+                description: n.uploads.disabled_msg || "Please try again later"
+            }), !0) : !1;
+        },
+        require: function() {
+            function s() {
+                "undefined" != typeof Config && require([ "css!" + Config.HFJURL ], function() {}, function() {});
+            }
+            function r(e) {
+                try {
+                    return JSON.parse(e.responseText);
+                } catch (n) {
+                    return {};
+                }
+            }
+            function u(e) {
+                window.top !== window && e.openBrowser ? a({
+                    type: "openBrowser",
+                    url: e.destination
+                }) : window.location.assign(e.destination);
+            }
+            e(document.body).addClass(t("touch") ? "has-touch" : "no-has-touch").addClass(t("input-placeholder-standard") ? "has-placeholders" : "no-has-placeholders");
+            var l = e(document.body), p = c.CCN_COLORS[l.attr("ccn")] || "#008cff";
+            n.defaults = {
+                color: p
+            }, c.initPing(), c.initZen(), o.init(), i.init(), window.top === window && ((~d.getState().indexOf("phone") || ~d.getState().indexOf("tablet")) && s(), 
+            d.on("phone tablet", s)), e(document).on({
+                ajaxSuccess: function(e, n) {
+                    var t = r(n);
+                    return t.destination ? u(t) : void 0;
+                },
+                ajaxError: function(n, t) {
+                    var o = c.RESPONSES[t.status];
+                    return e.isFunction(o) ? o(r(t)) : void 0;
+                }
+            });
+        },
+        initZen: function() {
+            function n() {
+                var e, n;
+                e = document.createElement("script"), e.src = "//assets.zendesk.com/external/zenbox/v2.6/zenbox.js", 
+                e.type = "text/javascript", e.id = "zenbox-script", document.head.appendChild(e), 
+                n = document.createElement("link"), n.href = "//assets.zendesk.com/external/zenbox/v2.6/zenbox.css", 
+                n.type = "text/css", n.id = "zenbox-style", n.rel = "stylesheet", n.media = "screen, projection", 
+                document.head.appendChild(n);
+            }
+            function t() {
+                try {
+                    if ("object" != typeof Zenbox) return e("#zenbox-script").length || n(), setTimeout(t, 150), 
+                    !1;
+                    "function" == typeof Zenbox.init && (Zenbox.init(Config.ZENBOX), "function" == typeof Zenbox.show && Zenbox.show());
+                } catch (o) {}
+                return !1;
+            }
+            e(".zendesk-footer-link").bind("click", t);
+        }
+    };
+    return c;
+});
+;define("nbd/event", [ "./util/extend", "./trait/pubsub" ], function(t, e) {
+    "use strict";
+    var n = t({}, e);
+    return n.bind = n.on, n.unbind = n.off, n.fire = n.trigger, n;
+}), define("lib/xhr", [ "jquery", "nbd/trait/promise" ], function(t, e) {
+    "use strict";
+    return function() {
+        var n, i = new e(), r = t.ajax.apply(t, arguments);
+        return i.resolve(r), n = i.thenable(), n.abort = r.abort, n;
+    };
+}), define("be/Controller/Dialog/Roulette", [ "jquery", "nbd/Controller/Responsive", "nbd/util/async" ], function(t, e, n) {
+    "use strict";
+    var i = e.extend({
+        $context: null,
+        setContext: function(t) {
+            this.$context && this.$context.off("click"), this.$context = t.on("click", function(t) {
+                t.isDefaultPrevented() || t.originalEvent.data === this._view || this.toggle(t.delegateTarget);
+            }.bind(this));
+        },
+        render: function(e) {
+            var n = t(e).closest(this._view.attachment), i = this._view.render(n.length ? n : document.body);
+            return this._view.position(e), i;
+        },
+        toggle: function(t) {
+            this._view.$view && this._view.$view.length ? (this._view.toggle(), this._view.position(t)) : (this.render(t || this.$context), 
+            n(this._view.show.bind(this._view)));
+        }
+    });
+    return i;
+}), define("lib/picturefill", [ "jquery" ], function(t) {
+    "use strict";
+    var e = window.matchMedia || window.msMatchMedia, n = function() {
+        var n = t(this), i = n.find("div[data-src]");
+        return i.length ? (e && (i = i.first().add(i.filter(function() {
+            var n = t(this).data("media");
+            return n && e(n).matches;
+        })).last()), n.attr("data-rendered", "rendered"), void t("<img>", {
+            alt: n.data("alt"),
+            src: i.data("src"),
+            "class": i.data("class"),
+            title: i.data("title"),
+            "data-pin-nopin": "pin"
+        }).appendTo(n)) : void n.find("img").remove();
+    };
+    return t.fn.picturefill = function() {
+        return this.find("div[data-picture]:not([data-rendered])").each(n), this;
+    };
+}), define("lib/truncate", [], function() {
+    "use strict";
+    return function(t, e) {
+        if (t.length && document.createRange) {
+            var n, i = document.createRange();
+            if (i.getBoundingClientRect && (n = /[^\s]/.exec(t.textContent))) {
+                i.setStartBefore(t), i.setEnd(t, n.index + 1);
+                var r = i.getBoundingClientRect().height, o = r * (e + .5), s = t.length, a = s, c = -1;
+                if (i.setEndAfter(t), r = i.getBoundingClientRect().height, o > r) return void i.detach();
+                for (;a; ) a = ~~(a / 2), s += c * a, i.setEnd(t, s), r = i.getBoundingClientRect().height, 
+                c * (r - o) > 0 && (c = -c);
+                var l = t.textContent.substr(0, s);
+                l = l.replace(/\s+$/, "");
+                do t.textContent = l + "…", i.setEndAfter(t), r = i.getBoundingClientRect().height, 
+                l = l.substr(0, --s); while (r > o);
+                i.detach();
+            }
+        }
+    };
+}), define("require/hgn!templates/notifications/appreciation", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg extra-padding">'), i.b("\n" + n), 
+            i.b('  <a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), i.b('" class="js-mini-profile" data-id="'), 
+            i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("</a> appreciated your project"), i.b("\n" + n), i.b("</div>"), i.b("\n" + n), 
+            i.b('<a href="'), i.b(i.v(i.d("project.url", t, e, 0))), i.b('" class="graphic">'), 
+            i.b("\n" + n), i.b('  <div class="activity-block project-appreciated">'), i.b("\n" + n), 
+            i.b('    <div data-picture="" data-alt="'), i.b(i.v(i.d("project.name", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('    <div alt="'), i.b(i.v(i.d("project.name", t, e, 0))), 
+            i.b('" data-src="'), i.b(i.v(i.d("project.covers.115", t, e, 0))), i.b('" data-class="project_image" data-title="'), 
+            i.b(i.v(i.d("project.name", t, e, 0))), i.b('"></div>'), i.b("\n" + n), i.b('    <div alt="'), 
+            i.b(i.v(i.d("project.name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("project.covers.202", t, e, 0))), 
+            i.b('" data-class="project_image project_image-2x" data-title="'), i.b(i.v(i.d("project.name", t, e, 0))), 
+            i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), i.b("\n" + n), i.b("      (min--moz-device-pixel-ratio: 1.3),"), 
+            i.b("\n" + n), i.b("      (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("      (min-device-pixel-ratio: 1.3),"), 
+            i.b("\n" + n), i.b('      (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), i.b("    </div>"), 
+            i.b("\n" + n), i.b('    <noscript><img alt="'), i.b(i.v(i.d("project.name", t, e, 0))), 
+            i.b('" title="'), i.b(i.v(i.d("project.name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("project.covers.115", t, e, 0))), 
+            i.b('" class="project_image" /></noscript>'), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), 
+            i.b("</a>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/collection", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b('  <span class="js-mini-profile" data-id="'), 
+            i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b('</span> followed your collection "<a href="'), i.b(i.v(i.d("collection.url", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("collection.title", t, e, 0))), i.b('</a>"'), i.b("\n" + n), 
+            i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/comment", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('#comments" class="graphic">'), 
+            i.b("\n" + n), i.b('  <div data-picture="" data-alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('    <div alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+            i.b('" data-src="'), i.b(i.v(i.d("covers.115", t, e, 0))), i.b('" data-class="comment-image" data-title="'), 
+            i.b(i.v(i.f("name", t, e, 0))), i.b('"></div>'), i.b("\n" + n), i.b('    <div alt="'), 
+            i.b(i.v(i.f("name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("covers.202", t, e, 0))), 
+            i.b('" data-class="comment-image comment-image-2x" data-title="'), i.b(i.v(i.f("name", t, e, 0))), 
+            i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), i.b("\n" + n), i.b("        (min--moz-device-pixel-ratio: 1.3),"), 
+            i.b("\n" + n), i.b("        (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), 
+            i.b("        (min-device-pixel-ratio: 1.3),"), i.b("\n" + n), i.b('        (min-resolution: 1.3dppx)"></div>'), 
+            i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b('  <noscript><img alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+            i.b('" title="'), i.b(i.v(i.f("name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+            i.b('" class="comment-image" /></noscript>'), i.b("\n"), i.b("\n" + n), i.b('  <div class="comment">'), 
+            i.b("\n" + n), i.b('    <strong class="actor js-mini-profile" data-id="'), i.b(i.v(i.d("actor.id", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b(':</strong> <span class="comment-text">'), 
+            i.b(i.v(i.d("comment.comment", t, e, 0))), i.b("</span>"), i.b("\n" + n), i.b("  </div>"), 
+            i.b("\n" + n), i.b("</a>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/wip_comment", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('" class="graphic">'), 
+            i.b("\n" + n), i.b('  <div data-picture="" data-alt="'), i.b(i.v(i.d("wip.title", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('    <div alt="'), i.b(i.v(i.d("wip.title", t, e, 0))), 
+            i.b('" data-src="'), i.b(i.v(i.d("revision.images.thumbnail_sm.url", t, e, 0))), 
+            i.b('" data-class="comment-image" data-title="'), i.b(i.v(i.d("wip.title", t, e, 0))), 
+            i.b('"></div>'), i.b("\n" + n), i.b('    <div alt="'), i.b(i.v(i.d("wip.title", t, e, 0))), 
+            i.b('" data-src="'), i.b(i.v(i.d("revision.images.thumbnail.url", t, e, 0))), i.b('" data-class="comment-image comment-image-2x" data-title="'), 
+            i.b(i.v(i.d("wip.title", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+            i.b("\n" + n), i.b("        (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+            i.b("        (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("        (min-device-pixel-ratio: 1.3),"), 
+            i.b("\n" + n), i.b('        (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+            i.b("  </div>"), i.b("\n" + n), i.b('  <noscript><img alt="'), i.b(i.v(i.d("wip.title", t, e, 0))), 
+            i.b('" title="'), i.b(i.v(i.d("wip.title", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("revision.images.thumbnail_sm.url", t, e, 0))), 
+            i.b('" class="comment-image" /></noscript>'), i.b("\n"), i.b("\n" + n), i.b('  <div class="comment wip-notification-comment">'), 
+            i.b("\n" + n), i.b('    <strong class="actor js-mini-profile" data-id="'), i.b(i.v(i.d("actor.id", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b(': </strong><span class="comment-text">'), 
+            i.b(i.v(i.d("comment.comment", t, e, 0))), i.b("</span>"), i.b("\n" + n), i.b("  </div>"), 
+            i.b("\n" + n), i.b("</a>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/comment_stub", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="graphic">'), i.b("\n" + n), i.b('  <div class="project-comment-wrap">'), 
+            i.b("\n" + n), i.b('    <div class="activity-block project-comment">'), i.b("\n" + n), 
+            i.s(i.f("project", t, e, 1), t, e, 0, 126, 138, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(n.rp("<comment0", t, e, ""));
+            }), t.pop()), i.s(i.f("revision", t, e, 1), t, e, 0, 170, 186, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(n.rp("<wip_comment1", t, e, ""));
+            }), t.pop()), i.b("    </div>"), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), 
+            i.b("</div>"), i.fl();
+        },
+        partials: {
+            "<comment0": {
+                name: "comment",
+                partials: {},
+                subs: {}
+            },
+            "<wip_comment1": {
+                name: "wip_comment",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/followed", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b('  <a href="'), 
+            i.b(i.v(i.d("actor.url", t, e, 0))), i.b('" class="js-mini-profile" data-id="'), 
+            i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("</a> followed your work"), i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/mention", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg extra-padding">'), i.b("\n" + n), 
+            i.b('  <a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("</a> mentioned you in a comment"), i.b("\n" + n), i.b("</div>"), i.b("\n" + n), 
+            i.b('<div class="graphic">'), i.b("\n" + n), i.b('  <div class="mention-wrap">'), 
+            i.b("\n" + n), i.b('    <div class="activity-block mention">'), i.b("\n" + n), i.s(i.f("project", t, e, 1), t, e, 0, 229, 241, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(n.rp("<comment0", t, e, ""));
+            }), t.pop()), i.s(i.f("revision", t, e, 1), t, e, 0, 273, 289, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(n.rp("<wip_comment1", t, e, ""));
+            }), t.pop()), i.b("    </div>"), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), 
+            i.b("</div>"), i.fl();
+        },
+        partials: {
+            "<comment0": {
+                name: "comment",
+                partials: {},
+                subs: {}
+            },
+            "<wip_comment1": {
+                name: "wip_comment",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/saved", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg extra-padding">'), i.b("\n" + n), 
+            i.b('  <a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), i.b('" class="js-mini-profile" data-id="'), 
+            i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("</a> saved your project"), i.b("\n" + n), i.b("</div>"), i.b("\n" + n), i.b('<a href="'), 
+            i.b(i.v(i.d("collection.url", t, e, 0))), i.b('" class="graphic">'), i.b("\n" + n), 
+            i.b('  <div class="activity-block project-collection">'), i.b("\n"), i.b("\n" + n), 
+            i.s(i.d("collection.latest_projects", t, e, 1), t, e, 0, 290, 986, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('    <div class="collection-project-image-wrap" data-picture="" data-alt="'), 
+                i.b(i.v(i.d("collection.title", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('    <div alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" data-class="collection-project-image" data-title="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('"></div>'), i.b("\n" + n), i.b('    <div alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" data-src="'), i.b(i.v(i.d("covers.202", t, e, 0))), i.b('" data-class="collection-project-image collection-project-image-2x" data-title="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                i.b("\n" + n), i.b("      (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+                i.b("      (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("      (min-device-pixel-ratio: 1.3),"), 
+                i.b("\n" + n), i.b('      (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), i.b("    </div>"), 
+                i.b("\n" + n), i.b('    <noscript><img alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" title="'), i.b(i.v(i.f("name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" class="collection-project-image" /></noscript>'), i.b("\n" + n);
+            }), t.pop()), i.b('    <div class="collection-title">'), i.b("\n" + n), i.b('      <span class="collection-title-text beicons-pre beicons-pre-collection">'), 
+            i.b(i.v(i.d("collection.title", t, e, 0))), i.b("</span>"), i.b("\n" + n), i.b("    </div>"), 
+            i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b("</a>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/social", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">Your '), i.b(i.v(i.f("app", t, e, 0))), 
+            i.b(' friend <a class="js-mini-profile" data-id="'), i.b(i.v(i.d("actor.id", t, e, 0))), 
+            i.b('" href="'), i.b(i.v(i.d("actor.url", t, e, 0))), i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("</a> joined Behance</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/_userProjects", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('" class="graphic">'), 
+            i.b("\n" + n), i.b('<div class="activity-block project-collection user-projects">'), 
+            i.b("\n" + n), i.s(i.f("latest_projects", t, e, 1), t, e, 0, 119, 791, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('  <div class="collection-project-image-wrap" data-picture="" data-alt="'), 
+                i.b(i.v(i.f("display_name", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('  <div alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" data-class="collection-project-image" data-title="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('"></div>'), i.b("\n" + n), i.b('  <div alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" data-src="'), i.b(i.v(i.d("covers.202", t, e, 0))), i.b('" data-class="collection-project-image collection-project-image-2x" data-title="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                i.b("\n" + n), i.b("    (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), i.b("    (-o-min-device-pixel-ratio: 4/3),"), 
+                i.b("\n" + n), i.b("    (min-device-pixel-ratio: 1.3),"), i.b("\n" + n), i.b('    (min-resolution: 1.3dppx)"></div>'), 
+                i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b('  <noscript><img alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" title="'), i.b(i.v(i.f("name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" class="collection-project-image" /></noscript>'), i.b("\n" + n);
+            }), t.pop()), i.b("</div>"), i.b("\n" + n), i.b("</a>"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/shortlist", [ "hogan", "require/hgn!templates/notifications/_userProjects" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b("  "), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b(" added "), i.b(i.v(i.d("user.display_name", t, e, 0))), i.b(' to your &ldquo;<a href="'), 
+            i.b(i.v(i.d("job._links.recruiter", t, e, 0))), i.b('"</a>'), i.b(i.v(i.d("job.title", t, e, 0))), 
+            i.b("</a>&rdquo; shortlist"), i.b("\n" + n), i.b("</div>"), i.b("\n" + n), i.s(i.d("user.latest_projects.0", t, e, 1), t, e, 0, 193, 248, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.s(n.f("user", t, e, 1), t, e, 0, 203, 238, "{{ }}") && (n.rs(t, e, function(t, e, n) {
+                    n.b(n.rp("<notifications/_userProjects0", t, e, ""));
+                }), t.pop());
+            }), t.pop()), i.fl();
+        },
+        partials: {
+            "<notifications/_userProjects0": {
+                name: "notifications/_userProjects",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "notifications/_userProjects": arguments[1].template,
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/discovered", [ "hogan", "require/hgn!templates/notifications/_userProjects" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b("  "), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b(" added "), i.b(i.v(i.d("user.display_name", t, e, 0))), i.b(' to your &ldquo;<a href="'), 
+            i.b(i.v(i.d("job._links.recruiter", t, e, 0))), i.b('"</a>'), i.b(i.v(i.d("job.title", t, e, 0))), 
+            i.b("</a>&rdquo; search"), i.b("\n" + n), i.b("</div>"), i.b("\n" + n), i.s(i.d("user.latest_projects.0", t, e, 1), t, e, 0, 190, 245, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.s(n.f("user", t, e, 1), t, e, 0, 200, 235, "{{ }}") && (n.rs(t, e, function(t, e, n) {
+                    n.b(n.rp("<notifications/_userProjects0", t, e, ""));
+                }), t.pop());
+            }), t.pop()), i.fl();
+        },
+        partials: {
+            "<notifications/_userProjects0": {
+                name: "notifications/_userProjects",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "notifications/_userProjects": arguments[1].template,
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/jobshared", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b("You were invited to join "), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b("'s search &ldquo;<a href=\""), i.b(i.v(i.d("job._links.recruiter", t, e, 0))), 
+            i.b('"</a>'), i.b(i.v(i.d("job.title", t, e, 0))), i.b("</a>&rdquo;"), i.b("\n"), 
+            i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/jobapplication", [ "hogan", "require/hgn!templates/notifications/_userProjects" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b("  "), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b(' applied to your talent search &ldquo;<a href="'), i.b(i.v(i.d("job._links.recruiter", t, e, 0))), 
+            i.b('"</a>'), i.b(i.v(i.d("job.title", t, e, 0))), i.b("</a>&rdquo;"), i.b("\n" + n), 
+            i.b("</div>"), i.b("\n" + n), i.s(i.d("actor.latest_projects.0", t, e, 1), t, e, 0, 178, 235, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.s(n.f("actor", t, e, 1), t, e, 0, 189, 224, "{{ }}") && (n.rs(t, e, function(t, e, n) {
+                    n.b(n.rp("<notifications/_userProjects0", t, e, ""));
+                }), t.pop());
+            }), t.pop()), i.fl();
+        },
+        partials: {
+            "<notifications/_userProjects0": {
+                name: "notifications/_userProjects",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "notifications/_userProjects": arguments[1].template,
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/jobrecommendation", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="msg">'), i.b("\n" + n), i.b("  You have "), 
+            i.b(i.v(i.f("count", t, e, 0))), i.b(' new recommendations for &ldquo;<a href="'), 
+            i.b(i.v(i.d("job._links.recruiter", t, e, 0))), i.b('"</a>'), i.b(i.v(i.d("job.title", t, e, 0))), 
+            i.b("</a>&rdquo;"), i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/note", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b(' left a note on <a href="'), 
+            i.b(i.v(i.d("user.url", t, e, 0))), i.b('">'), i.b(i.v(i.d("user.display_name", t, e, 0))), 
+            i.b('</a> in your &ldquo;<a href="'), i.b(i.v(i.d("job._links.recruiter", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("job.title", t, e, 0))), i.b("</a>&rdquo; search"), i.b("\n" + n), 
+            i.b('<div class="note-wrap">'), i.b("\n" + n), i.b('  <div class="activity-block note">'), 
+            i.b("\n" + n), i.b('    <div class="comment">'), i.b("\n" + n), i.b("      "), i.b(i.v(i.d("note.note_text", t, e, 0))), 
+            i.b("\n" + n), i.b("    </div>"), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), 
+            i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/trait/notificationPartial", [ "hgn!templates/notifications/appreciation", "hgn!templates/notifications/collection", "hgn!templates/notifications/comment", "hgn!templates/notifications/wip_comment", "hgn!templates/notifications/comment_stub", "hgn!templates/notifications/followed", "hgn!templates/notifications/mention", "hgn!templates/notifications/saved", "hgn!templates/notifications/social", "hgn!templates/notifications/shortlist", "hgn!templates/notifications/discovered", "hgn!templates/notifications/jobshared", "hgn!templates/notifications/jobapplication", "hgn!templates/notifications/jobrecommendation", "hgn!templates/notifications/note" ], function(t, e, n, i, r, o, s, a, c, l, b, d, u, p, f) {
+    "use strict";
+    var h = {
+        appreciate: t.template,
+        followcollection: e.template,
+        projectcomment: r.template,
+        wipcomment: r.template,
+        followuser: o.template,
+        projectaddedtocollection: a.template,
+        socialfriendjoined: c.template,
+        usermentionprojectcomment: s.template,
+        usermentionwiprevisioncomment: s.template,
+        addtoshortlist: l.template,
+        addtodiscovered: b.template,
+        jobshared: d.template,
+        jobapplicationcreated: u.template,
+        jobrecommendationsreceived: p.template,
+        notecreated: f.template
+    };
+    return {
+        generatePartials: function(t) {
+            return {
+                innard: h[t.action_key],
+                comment: n.template,
+                wip_comment: i.template
+            };
+        }
+    };
+}), define("require/hgn!templates/notification", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="notification-group'), i.s(i.f("read_on", t, e, 1), t, e, 1, 0, 0, "") || i.b(" unread"), 
+            i.b('">'), i.b("\n" + n), i.b('  <div class="notification-container">'), i.b("\n" + n), 
+            i.s(i.f("data", t, e, 1), t, e, 0, 114, 1202, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.s(i.f("actor", t, e, 1), t, e, 0, 129, 963, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                    i.b('    <a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), i.b('" class="avatar js-mini-profile" data-id="'), 
+                    i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('      <div data-picture="" data-alt="'), 
+                    i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('        <div alt="'), 
+                    i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("actor.images.50", t, e, 0))), 
+                    i.b('" data-class="avatar-image" data-title="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+                    i.b('"></div>'), i.b("\n" + n), i.b('        <div alt="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+                    i.b('" data-src="'), i.b(i.v(i.d("actor.images.115", t, e, 0))), i.b('" data-class="avatar-image avatar-image-2x" data-title="'), 
+                    i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                    i.b("\n" + n), i.b("          (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+                    i.b("          (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("          (min-device-pixel-ratio: 1.3),"), 
+                    i.b("\n" + n), i.b('          (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+                    i.b("      </div>"), i.b("\n" + n), i.b('      <noscript><img alt="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+                    i.b('" title="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" src="'), 
+                    i.b(i.v(i.d("actor.images.50", t, e, 0))), i.b('" class="avatar-image" /></noscript>'), 
+                    i.b("\n" + n), i.b("    </a>"), i.b("\n" + n);
+                }), t.pop()), i.s(i.f("actor", t, e, 1), t, e, 1, 0, 0, "") || (i.b('      <img class="avatar" src="'), 
+                i.b(i.v(i.f("assetsurl", t, e, 0))), i.b('/img/notifications/behance-icon.png" />'), 
+                i.b("\n" + n)), i.b('    <div class="detail beside-avatar">'), i.b("\n" + n), i.b(i.rp("<innard0", t, e, "      ")), 
+                i.b('      <div class="time">'), i.b(i.v(i.f("time_ago", t, e, 0))), i.b("</div>"), 
+                i.b("\n" + n), i.b("    </div>"), i.b("\n" + n);
+            }), t.pop()), i.b("  </div>"), i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {
+            "<innard0": {
+                name: "innard",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/Notification", [ "jquery", "moment", "nbd/View/Entity", "lib/picturefill", "lib/truncate", "be/trait/notificationPartial", "hgn!templates/notification" ], function(t, e, n, i, r, o, s) {
+    "use strict";
+    var a = n.extend({
+        template: function(e) {
+            return t(s(e, this.generatePartials(e)));
+        },
+        templateData: function() {
+            var t = this._super();
+            return t.time_ago = function() {
+                return e.unix(t.created_on).fromNow();
+            }, t.assetsurl = Config.ASSETSURL, t;
+        },
+        rendered: function() {
+            this.$view.picturefill().find(".comment-text").contents().toArray().forEach(function(t) {
+                r(t, 4);
+            });
+        },
+        update: function() {
+            if (this.$view) {
+                var t = this.templateData().time_ago();
+                this.$view.removeClass("unread").find(".time").text(t);
+            }
+        }
+    }).mixin(o);
+    return a;
+}), define("be/Controller/Notification", [ "nbd/Controller/Entity", "be/View/Notification" ], function(t, e) {
+    "use strict";
+    var n = t.extend({
+        update: function() {
+            this._view.update();
+        }
+    }, {
+        VIEW_CLASS: e
+    });
+    return n;
+}), define("require/hgn!templates/notificationGroup", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="notification-group">'), i.b("\n" + n), 
+            i.b('  <div class="js-context"></div>'), i.b("\n" + n), i.b('  <div class="js-more notification-group-more">+ <span class="count">0</span> More Updates</div>'), 
+            i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/NotificationGroup", [ "jquery", "nbd/View/Entity", "nbd/util/async", "nbd/util/pipe", "hgn!templates/notificationGroup" ], function(t, e, n, i, r) {
+    "use strict";
+    var o = e.extend({
+        template: i(r, t),
+        draw: function(t) {
+            var e, i = this._model.get("entries");
+            i && i.length && (this._iterator = this._iterator || 0, i = i.slice(this._iterator, +t ? this._iterator += t : void 0), 
+            e = this.$view.find(".js-context"), i.forEach(function(t) {
+                t.render(e);
+            }), this._iterator || n(function() {
+                this._iterator = 0;
+            }.bind(this)));
+        },
+        rendered: function() {
+            this.draw(3);
+            var e = this._model.get("entries").length - (this._iterator || 0);
+            e ? this.$view.on("click", ".js-more", function() {
+                t(this).hide();
+            }).one("click", ".js-more", this.draw.bind(this)).find(".count").text(e) : this.$view.find(".js-more").hide();
+        }
+    });
+    return o;
+}), define("be/Controller/NotificationGroup", [ "nbd/Controller/Entity", "be/View/NotificationGroup" ], function(t, e) {
+    "use strict";
+    var n = t.extend({
+        add: function(t) {
+            var e = this._model.get("entries") || [];
+            e.push(t), this._model.set("entries", e);
+        },
+        update: function() {
+            var t = this._model.get("entries") || [];
+            t.forEach(function(t) {
+                t.update();
+            });
+        }
+    }, {
+        VIEW_CLASS: e
+    });
+    return n;
+}), define("be/spinner", [ "jquery", "vendor/misc/spin" ], function(t, e) {
+    "use strict";
+    var n = {
+        lines: 30,
+        length: 0,
+        width: 2,
+        radius: 9,
+        corners: 0,
+        speed: 2,
+        trail: 100,
+        hwaccel: !0,
+        className: "spinner",
+        zIndex: 2e9,
+        top: "19px",
+        left: "20px",
+        opacity: "0"
+    }, i = {
+        init: function(e) {
+            var n = t(".js-spin", e);
+            return n.length || (n = i._generate()), n.toArray().map(i.create), n;
+        },
+        show: function() {
+            i._$default || i._generate(), i._$default.appendTo(document.body);
+        },
+        hide: function() {
+            i._$default && i._$default.detach();
+        },
+        _generate: function() {
+            return i._$default = t('<div class="js-spin be-spinner">'), i.create(i._$default[0]), 
+            i._$default;
+        },
+        create: function(i, r) {
+            var o = new e(t.extend({}, n, r));
+            return i && o.spin(i), o;
+        }
+    };
+    return i;
+}), define("require/hgn!templates/bell/section", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="activity-container js-'), i.b(i.v(i.f("type", t, e, 0))), 
+            i.b('-activity">'), i.b("\n" + n), i.b('  <h2 class="bell-title '), i.b(i.v(i.f("type", t, e, 0))), 
+            i.b('-title hide-phone js-bell-title">'), i.b(i.v(i.f("title", t, e, 0))), i.b("</h2>"), 
+            i.b("\n" + n), i.b('  <h2 class="bell-title bell-title-dummy hide-phone js-bell-title-dummy">'), 
+            i.b(i.v(i.f("title", t, e, 0))), i.b("</h2>"), i.b("\n" + n), i.b('  <div class="js-error-container messages hide">'), 
+            i.b("\n" + n), i.b('    <div class="error">'), i.b("\n" + n), i.b('      <div class="icon"></div>'), 
+            i.b("\n" + n), i.b('      <span class="js-error-text"></span>'), i.b("\n" + n), 
+            i.b("    </div>"), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b('  <div class="js-spin loading-spinner cfix"></div>'), 
+            i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notificationEmpty", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="notifications-empty">You will receive notifications when people appreciate, comment on or collect your work.</div>'), 
+            i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/Notifications", [ "jquery", "nbd/View/Entity", "nbd/util/pipe", "be/spinner", "hgn!templates/bell/section", "hgn!templates/notificationEmpty" ], function(t, e, n, i, r, o) {
+    "use strict";
+    var s = e.extend({
+        template: n(r, t),
+        templateData: function() {
+            return {
+                title: "Your Notifications",
+                type: "notification"
+            };
+        },
+        rendered: function() {
+            this.$loading = i.init(this.$view), this.$loading.hide(), this.listenTo(this._model, "entries", this.draw), 
+            this.draw(this._model.get("entries"));
+        },
+        draw: function(t) {
+            t && (t.forEach(function(t) {
+                t.render(this.$view);
+            }.bind(this)), this.empty(!t.length));
+        },
+        empty: function(e) {
+            var n = !e;
+            this.$empty = this.$empty || t(o()), n ? this.$empty.remove() : this.$view.append(this.$empty);
+        }
+    });
+    return s;
+}), define("be/Controller/Notifications", [ "nbd/trait/pubsub", "nbd/Controller/Entity", "nbd/util/async", "lib/xhr", "be/Controller/Notification", "be/Controller/NotificationGroup", "be/View/Notifications" ], function(t, e, n, i, r, o, s) {
+    "use strict";
+    var a, c = "/v2/notifications?action_set=bell-note-v1";
+    return a = e.extend({
+        refresh: function() {
+            return this._model.get("entries") ? void (this.block || this.get()) : this.more();
+        },
+        get: function l() {
+            var t = l.bind(this), e = this._model, i = this.read({
+                onset_ts: e.get("onset")
+            }).then(function(i) {
+                if (!i.notifications) throw i;
+                return e.set("onset", i.latest_ts), i.has_more && n(t), i.notifications;
+            }).then(this.constructor.makeEntries);
+            return i.then(function(t) {
+                var n = e.get("entries") || [];
+                e.set("entries", t.concat(n));
+            }).then(this.trigger.bind(this, "sync")), i;
+        },
+        more: function b() {
+            if (!b.block) {
+                b.block = !0;
+                var t = this._model, e = this.read({
+                    offset_ts: t.get("offset")
+                }).then(function(e) {
+                    if (!e.notifications) throw e;
+                    b.block = !e.has_more;
+                    var n = t.data();
+                    return n.onset = n.onset || e.latest_ts, n.offset = e.earliest_ts, e.notifications;
+                }).then(this.constructor.makeEntries);
+                return e.then(function(e) {
+                    var n = t.get("entries") || [];
+                    t.set("entries", n.concat(e));
+                }).then(this.trigger.bind(this, "sync")), e;
+            }
+        },
+        read: function(t) {
+            try {
+                this._view.$loading.show();
+            } catch (e) {}
+            var n = function() {
+                this._view.$loading.hide();
+            }.bind(this), r = i({
+                url: c,
+                type: "get",
+                data: t
+            });
+            return r.then(n, n), r;
+        },
+        update: function() {
+            var t = this._model.get("entries");
+            t && t.length && t.forEach(function(t) {
+                t.update();
+            });
+        },
+        clear: function() {
+            i({
+                url: c,
+                type: "delete"
+            });
+        }
+    }, {
+        VIEW_CLASS: s,
+        makeEntries: function(t) {
+            var e, n, i, s = [], a = 0, c = 2;
+            for (n = 0; n < t.length; ++n) if (t[n + 1] && t[n + 1].action_key === t[n].action_key) a++; else {
+                if (a >= c) {
+                    for (e = new o(), i = n - a; n >= i; ++i) e.add(new r(t[i]));
+                    s.push(e);
+                } else for (i = n - a; n >= i; ++i) s.push(new r(t[i]));
+                a = 0;
+            }
+            return s;
+        }
+    }).mixin(t);
+}), define("be/trait/eventMappable", [], function() {
+    "use strict";
+    function t(t, e, n) {
+        var i = [], r = t[e], o = function(t) {
+            var e = [];
+            return "string" == typeof t ? e.push({
+                method: n[t].bind(n)
+            }) : "function" == typeof t ? e.push({
+                method: t
+            }) : Object.keys(t).forEach(function(n) {
+                var i = o(t[n]);
+                e.push({
+                    selector: n,
+                    method: i[0].method
+                });
+            }), e;
+        };
+        return Array.isArray(r) ? r.forEach(function(t) {
+            i.push.apply(i, o(t));
+        }) : i.push.apply(i, o(r)), i;
+    }
+    var e = {
+        _mapEvents: function() {
+            var e = this;
+            this._undelegateEvents(), Object.keys(this.events).forEach(function(n) {
+                var i = t(e.events, n, e);
+                n += ".delegated", i.forEach(function(t) {
+                    t.selector ? e.$view.on(n, t.selector, t.method) : e.$view.on(n, t.method);
+                });
+            });
+        },
+        _undelegateEvents: function() {
+            this.$view.off(".delegated");
+        }
+    };
+    return e;
+}), define("require/hgn!templates/notifications/proposition", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="proposition-group cfix">'), i.b("\n" + n), 
+            i.b('  <div class="js-invitation">'), i.b("\n"), i.b("\n" + n), i.b('    <a href="'), 
+            i.b(i.v(i.d("actor.url", t, e, 0))), i.b('" class="avatar js-mini-profile" data-id="'), 
+            i.b(i.v(i.d("actor.id", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('      <div data-picture="" data-alt="'), 
+            i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('        <div alt="'), 
+            i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("actor.images.50", t, e, 0))), 
+            i.b('" data-class="avatar-image" data-title="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b('"></div>'), i.b("\n" + n), i.b('        <div alt="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b('" data-src="'), i.b(i.v(i.d("actor.images.115", t, e, 0))), i.b('" data-class="avatar-image avatar-image-2x" data-title="'), 
+            i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+            i.b("\n" + n), i.b("          (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+            i.b("          (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("          (min-device-pixel-ratio: 1.3),"), 
+            i.b("\n" + n), i.b('          (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+            i.b("      </div>"), i.b("\n" + n), i.b('      <noscript><img alt="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), 
+            i.b('" title="'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b('" src="'), 
+            i.b(i.v(i.d("actor.images.50", t, e, 0))), i.b('" class="avatar-image" /></noscript>'), 
+            i.b("\n" + n), i.b("    </a>"), i.b("\n"), i.b("\n" + n), i.b('    <div class="detail beside-avatar">'), 
+            i.b("\n" + n), i.b('      <div class="msg extra-padding">'), i.b("\n" + n), i.b(i.rp("<subject0", t, e, "        ")), 
+            i.b("      </div>"), i.b("\n"), i.b("\n" + n), i.b('      <div class="graphic">'), 
+            i.b("\n" + n), i.b('        <div class="activity-block proposition-'), i.b(i.v(i.f("proposition", t, e, 0))), 
+            i.b(' cfix">'), i.b("\n" + n), i.b(i.rp("<innards1", t, e, "          ")), i.b("\n" + n), 
+            i.b('          <button class="accept right js-accept form-button form-button-small form-button-default">Accept</button>'), 
+            i.b("\n" + n), i.b("        </div>"), i.b("\n" + n), i.b("      </div>"), i.b("\n"), 
+            i.b("\n" + n), i.b('      <div class="time">'), i.b("\n" + n), i.b('        <span class="proposition-time js-time">'), 
+            i.b(i.v(i.f("time_ago", t, e, 0))), i.b("</span>"), i.b("\n" + n), i.b('        <span class="js-reject proposition-reject">Decline invitation</span>'), 
+            i.b("\n" + n), i.b("      </div>"), i.b("\n"), i.b("\n" + n), i.b("    </div>"), 
+            i.b("\n"), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b("</div>"), i.b("\n"), 
+            i.fl();
+        },
+        partials: {
+            "<subject0": {
+                name: "subject",
+                partials: {},
+                subs: {}
+            },
+            "<innards1": {
+                name: "innards",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/propositions/collection", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.s(i.f("collection", t, e, 1), t, e, 0, 15, 773, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('  <a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('    <div data-picture="" data-alt="'), 
+                i.b(i.v(i.f("title", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('      <div alt="'), 
+                i.b(i.v(i.f("title", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("latest_projects.0.covers.115", t, e, 0))), 
+                i.b('" data-class="comment-image" data-title="'), i.b(i.v(i.f("title", t, e, 0))), 
+                i.b('"></div>'), i.b("\n" + n), i.b('      <div alt="'), i.b(i.v(i.f("title", t, e, 0))), 
+                i.b('" data-src="'), i.b(i.v(i.d("latest_projects.0.covers.202", t, e, 0))), i.b('" data-class="comment-image comment-image-2x" data-title="'), 
+                i.b(i.v(i.f("title", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                i.b("\n" + n), i.b("          (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+                i.b("          (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("          (min-device-pixel-ratio: 1.3),"), 
+                i.b("\n" + n), i.b('          (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+                i.b("    </div>"), i.b("\n" + n), i.b('    <noscript><img alt="'), i.b(i.v(i.f("title", t, e, 0))), 
+                i.b('" title="'), i.b(i.v(i.f("title", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("latest_projects.0.covers.115", t, e, 0))), 
+                i.b('" class="comment-image" /></noscript>'), i.b("\n" + n), i.b("  </a>"), i.b("\n" + n), 
+                i.b('  <div class="proposition-subject">'), i.b(i.v(i.f("title", t, e, 0))), i.b("</div>"), 
+                i.b("\n" + n);
+            }), t.pop()), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/propositions/project", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.s(i.f("project", t, e, 1), t, e, 0, 12, 724, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('  <a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('    <div data-picture="" data-alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('      <div alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" data-class="proposition-image" data-title="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('"></div>'), i.b("\n" + n), i.b('      <div alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" data-src="'), i.b(i.v(i.d("covers.202", t, e, 0))), i.b('" data-class="proposition-image proposition-image-2x" data-title="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                i.b("\n" + n), i.b("          (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+                i.b("          (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("          (min-device-pixel-ratio: 1.3),"), 
+                i.b("\n" + n), i.b('          (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+                i.b("    </div>"), i.b("\n" + n), i.b('    <noscript><img alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" title="'), i.b(i.v(i.f("name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("covers.115", t, e, 0))), 
+                i.b('" class="proposition-image" /></noscript>'), i.b("\n" + n), i.b("  </a>"), 
+                i.b("\n" + n), i.b('  <div class="proposition-subject">'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b("</div>"), i.b("\n" + n);
+            }), t.pop()), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/propositions/team", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.s(i.f("team", t, e, 1), t, e, 0, 9, 703, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('  <a href="'), i.b(i.v(i.f("url", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('    <div data-picture="" data-alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('">'), i.b("\n" + n), i.b('      <div alt="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-src="'), i.b(i.v(i.d("images.138", t, e, 0))), 
+                i.b('" data-class="comment-image" data-title="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('"></div>'), i.b("\n" + n), i.b('      <div alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" data-src="'), i.b(i.v(i.d("images.276", t, e, 0))), i.b('" data-class="comment-image comment-image-2x" data-title="'), 
+                i.b(i.v(i.f("name", t, e, 0))), i.b('" data-media="(-webkit-min-device-pixel-ratio: 1.3),'), 
+                i.b("\n" + n), i.b("          (min--moz-device-pixel-ratio: 1.3),"), i.b("\n" + n), 
+                i.b("          (-o-min-device-pixel-ratio: 4/3),"), i.b("\n" + n), i.b("          (min-device-pixel-ratio: 1.3),"), 
+                i.b("\n" + n), i.b('          (min-resolution: 1.3dppx)"></div>'), i.b("\n" + n), 
+                i.b("    </div>"), i.b("\n" + n), i.b('    <noscript><img alt="'), i.b(i.v(i.f("name", t, e, 0))), 
+                i.b('" title="'), i.b(i.v(i.f("name", t, e, 0))), i.b('" src="'), i.b(i.v(i.d("images.138", t, e, 0))), 
+                i.b('" class="comment-image" /></noscript>'), i.b("\n" + n), i.b("  </a>"), i.b("\n" + n), 
+                i.b('<div class="proposition-subject">'), i.b(i.v(i.f("name", t, e, 0))), i.b("</div>"), 
+                i.b("\n" + n);
+            }), t.pop()), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/propositions/subjects/text", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), 
+            i.b('" class="js-mini-profile" data-id="'), i.b(i.v(i.d("actor.id", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b("</a> "), i.b(i.v(i.f("action", t, e, 0))), 
+            i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/notifications/propositions/subjects/team", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<a href="'), i.b(i.v(i.d("actor.url", t, e, 0))), 
+            i.b('" class="js-mini-profile" data-id="'), i.b(i.v(i.d("actor.id", t, e, 0))), 
+            i.b('">'), i.b(i.v(i.d("actor.display_name", t, e, 0))), i.b("</a> "), i.b(i.v(i.f("action", t, e, 0))), 
+            i.b(" "), i.s(i.f("team", t, e, 1), t, e, 0, 118, 148, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b('<a href="'), n.b(n.v(n.f("url", t, e, 0))), n.b('">'), n.b(n.v(n.f("name", t, e, 0))), 
+                n.b("</a>");
+            }), t.pop()), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/Proposition", [ "jquery", "moment", "nbd/View/Entity", "nbd/trait/promise", "nbd/util/extend", "lib/picturefill", "be/trait/eventMappable", "hgn!templates/notifications/proposition", "hgn!templates/notifications/propositions/collection", "hgn!templates/notifications/propositions/project", "hgn!templates/notifications/propositions/team", "hgn!templates/notifications/propositions/subjects/text", "hgn!templates/notifications/propositions/subjects/team" ], function(t, e, n, i, r, o, s, a, c, l, b, d, u) {
+    "use strict";
+    var p, f = "Invitation declined", h = 250, v = 1e3, m = {
+        project_owner: {
+            innards: l.template,
+            subject: d.template
+        },
+        collection_owner: {
+            innards: c.template,
+            subject: d.template
+        },
+        member_to_team: {
+            innards: b.template,
+            subject: u.template
+        },
+        team_to_member: {
+            innards: b.template,
+            subject: u.template
+        },
+        project_to_team: {
+            innards: l.template,
+            subject: u.template
+        }
+    }, g = {
+        project_owner: "invited you to co-own a Project",
+        collection_owner: "invited you to co-own a Collection",
+        member_to_team: "requested to join",
+        team_to_member: "invited you to join",
+        project_to_team: "requested to add a project to"
+    };
+    return p = n.extend({
+        events: {
+            click: {
+                ".js-accept": "_acceptInvitation",
+                ".js-reject": "_rejectInvitation"
+            }
+        },
+        template: function(e) {
+            return t(a(e, m[e.type]));
+        },
+        templateData: function() {
+            var t = this._super();
+            return r({
+                action: g[t.type],
+                actor: t.other_user,
+                proposition: "project",
+                time_ago: function() {
+                    return e.unix(t.created_on).fromNow();
+                }
+            }, t);
+        },
+        rendered: function() {
+            this.$rejectBtn = this.$view.find(".js-reject"), this.$time = this.$view.find(".js-time"), 
+            this.$view.picturefill(), this._mapEvents();
+        },
+        update: function() {
+            if (this.$view) {
+                var t = this.templateData().time_ago;
+                this.$time.text(t);
+            }
+        },
+        acceptAndFade: function() {
+            var t = new i();
+            return this.$view.fadeOut(h, t.resolve), t;
+        },
+        declineAndFade: function() {
+            var t = new i();
+            return this.$rejectBtn.text(f), this.$view.delay(v).fadeOut(h, t.resolve), t;
+        },
+        _acceptInvitation: function() {
+            this._controller.accept();
+        },
+        _rejectInvitation: function() {
+            this._controller.reject();
+        }
+    }).mixin(s);
+}), define("be/Controller/Proposition", [ "nbd/Controller/Entity", "nbd/trait/pubsub", "lib/xhr", "be/View/Proposition" ], function(t, e, n, i) {
+    "use strict";
+    var r, o = "/v2/notifications/invitations/";
+    return r = t.extend({
+        update: function() {
+            this._view.update();
+        },
+        accept: function() {
+            n({
+                url: o + this._model.get("id"),
+                type: "put"
+            }).then(this._view.acceptAndFade.bind(this._view)).then(this._remove.bind(this)).then(null, this.trigger.bind(this, "error"));
+        },
+        reject: function() {
+            n({
+                url: o + this._model.get("id"),
+                type: "delete"
+            }).then(this._view.declineAndFade.bind(this._view)).then(this._remove.bind(this));
+        },
+        _remove: function() {
+            this.trigger("resolve", this._model.get("id")), this.destroy();
+        }
+    }, {
+        VIEW_CLASS: i
+    }).mixin(e);
+}), define("be/View/Propositions", [ "jquery", "nbd/View/Entity", "nbd/util/pipe", "be/spinner", "hgn!templates/bell/section" ], function(t, e, n, i, r) {
+    "use strict";
+    var o = e.extend({
+        template: n(r, t),
+        templateData: function() {
+            return {
+                title: "Your Requests",
+                type: "propositions"
+            };
+        },
+        rendered: function() {
+            this.$errorContainer = this.$view.find(".js-error-container"), this.$loading = i.init(this.$view), 
+            this.$errorContainer.addClass("hide"), this.$loading.hide(), this.listenTo(this._model, "entries", this._draw), 
+            this._draw(this._model.get("entries"));
+        },
+        update: function() {
+            this.$errorContainer.addClass("hide");
+        },
+        showErrorMessages: function(t) {
+            var e = t.messages.reduce(function(t, e) {
+                return t + "\n" + e.message;
+            }, "");
+            this.$errorContainer.find(".js-error-text").text(e).end().removeClass("hide");
+        },
+        _draw: function(t) {
+            var e = this._model.get("order");
+            return t && Object.keys(t).length ? (this.$view.removeClass("hide"), void e.forEach(function(e) {
+                var n = t[e];
+                n && n.render(this.$view);
+            }.bind(this))) : void this.$view.addClass("hide");
+        }
+    });
+    return o;
+}), define("be/Controller/Propositions", [ "nbd/trait/pubsub", "nbd/Controller/Entity", "lib/xhr", "be/Controller/Proposition", "be/View/Propositions" ], function(t, e, n, i, r) {
+    "use strict";
+    var o, s = "/v2/notifications/invitations";
+    return o = e.extend({
+        more: function a() {
+            if (!a.block) {
+                a.block = !0;
+                var t = this, e = this._model, n = this.read();
+                return n.then(function(t) {
+                    if (!t.invitations) throw t;
+                    return t.invitations;
+                }).then(function(e) {
+                    var n = e.map(function(t) {
+                        return new i(t);
+                    });
+                    return n.forEach(function(e) {
+                        t.listenTo(e, "resolve", t._updateEntries).listenTo(e, "error", t._displayErrors);
+                    }), n;
+                }).then(function(t) {
+                    var n = e.get("entries") || {}, i = e.get("order") || [], r = t.reduce(function(t, e) {
+                        var n = e._model.get("id");
+                        return t[n] = e, i.push(n), t;
+                    }, n);
+                    return e.set("order", i), e.set("entries", r), Object.keys(r).length;
+                }).then(this.trigger.bind(this, "sync")), n;
+            }
+        },
+        count: function() {
+            var t = this._model.get("entries");
+            return t ? Object.keys(t).length : 0;
+        },
+        read: function() {
+            try {
+                this._view.$loading.show();
+            } catch (t) {}
+            var e = function() {
+                this._view.$loading.hide();
+            }.bind(this), i = n({
+                url: s
+            });
+            return i.then(e, e), i;
+        },
+        update: function() {
+            var t = this._model.get("entries");
+            this._view.update(), t && Object.keys(t).length && Object.keys(t).forEach(function(e) {
+                var n = t[e];
+                n && n.update();
+            }.bind(this));
+        },
+        _updateEntries: function(t) {
+            var e = this._model.get("entries") || {}, n = this._model.get("order") || [];
+            e[t] && (delete e[t], n.splice(n.indexOf(t), 1)), this._model.set("entries", e), 
+            this._model.set("order", n), this.trigger("removed");
+        },
+        _displayErrors: function(t) {
+            t && t.responseJSON && (t = t.responseJSON), this._view.showErrorMessages(t);
+        }
+    }, {
+        VIEW_CLASS: r
+    }).mixin(t);
+}), define("require/hgn!templates/dialog", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="popup '), i.b(i.v(i.f("dialogType", t, e, 0))), 
+            i.s(i.f("classes", t, e, 1), t, e, 0, 44, 50, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" "), n.b(n.v(n.d(".", t, e, 0)));
+            }), t.pop()), i.s(i.f("buttons", t, e, 1), t, e, 1, 0, 0, "") || i.b(" no-buttons"), 
+            i.s(i.f("title", t, e, 1), t, e, 1, 0, 0, "") || i.b(" no-title"), i.s(i.f("fullBleed", t, e, 1), t, e, 0, 140, 151, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" full-bleed");
+            }), t.pop()), i.b('">'), i.b("\n" + n), i.b('  <div class="popup-inner-wrap">'), 
+            i.b("\n"), i.b("\n" + n), i.s(i.f("toolbar", t, e, 1), t, e, 0, 218, 647, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('    <div class="'), i.s(i.f("layover", t, e, 1), t, e, 0, 247, 254, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                    n.b("toolbar");
+                }), t.pop()), i.s(i.f("layover", t, e, 1), t, e, 1, 0, 0, "") || i.b("popup-header"), 
+                i.b('">'), i.b("\n" + n), i.b('      <div class="header">'), i.b(i.t(i.f("title", t, e, 0))), 
+                i.b("</div>"), i.b("\n" + n), i.s(i.f("hideClose", t, e, 1), t, e, 1, 0, 0, "") || (i.b('        <a class="header-action close right js-close'), 
+                i.s(i.f("layover", t, e, 1), t, e, 1, 0, 0, "") || i.b(" popup-close"), i.b('">'), 
+                i.b("\n" + n), i.b('          <span class="nav-icon-close nav-icon"></span>'), i.b("\n" + n), 
+                i.b("        </a>"), i.b("\n" + n)), i.s(i.f("layover", t, e, 1), t, e, 0, 569, 619, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                    n.s(n.f("button", t, e, 1), t, e, 0, 589, 601, "{{ }}") && (n.rs(t, e, function(t, e, n) {
+                        n.b(n.rp("<button0", t, e, ""));
+                    }), t.pop());
+                }), t.pop()), i.b("    </div>"), i.b("\n" + n);
+            }), t.pop()), i.b("\n" + n), i.b('    <div class="popup-content'), i.s(i.f("toolbar", t, e, 1), t, e, 0, 702, 714, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" has-toolbar");
+            }), t.pop()), i.b('">'), i.b("\n" + n), i.b(i.rp("<content1", t, e, "      ")), 
+            i.s(i.f("layover", t, e, 1), t, e, 1, 0, 0, "") || (i.b("    </div>"), i.b("\n" + n)), 
+            i.b("\n" + n), i.b('      <div class="popup-buttons'), i.s(i.f("buttons", t, e, 1), t, e, 1, 0, 0, "") || i.b(" hide"), 
+            i.b('">'), i.b("\n" + n), i.s(i.f("buttons", t, e, 1), t, e, 0, 878, 890, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(n.rp("<button2", t, e, ""));
+            }), t.pop()), i.b("      </div>"), i.b("\n"), i.b("\n" + n), i.s(i.f("layover", t, e, 1), t, e, 0, 933, 949, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b("    </div>"), i.b("\n" + n);
+            }), t.pop()), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b("</div>"), i.b("\n"), 
+            i.b("\n" + n), i.s(i.f("blocking", t, e, 1), t, e, 0, 1015, 1049, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('<div class="blocking-div"></div>'), i.b("\n" + n);
+            }), t.pop()), i.fl();
+        },
+        partials: {
+            "<button0": {
+                name: "button",
+                partials: {},
+                subs: {}
+            },
+            "<content1": {
+                name: "content",
+                partials: {},
+                subs: {}
+            },
+            "<button2": {
+                name: "button",
+                partials: {},
+                subs: {}
+            }
+        },
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/button", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('  <div class="form-item form-item-a'), i.s(i.f("containerClasses", t, e, 1), t, e, 0, 56, 62, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" "), n.b(n.v(n.d(".", t, e, 0)));
+            }), t.pop()), i.b('">'), i.b("\n" + n), i.b('    <a class="form-button'), i.s(i.f("classes", t, e, 1), t, e, 0, 123, 129, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" "), n.b(n.v(n.d(".", t, e, 0)));
+            }), t.pop()), i.s(i.f("classes", t, e, 1), t, e, 1, 0, 0, "") || i.b(" form-button-default"), 
+            i.b('"'), i.b("\n" + n), i.b("      "), i.s(i.f("href", t, e, 1), t, e, 0, 202, 218, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(' href="'), n.b(n.v(n.f("href", t, e, 0))), n.b('"');
+            }), t.pop()), i.b(' unselectable="on"'), i.b("\n" + n), i.b("      tabindex="), 
+            i.s(i.f("tabindex", t, e, 1), t, e, 0, 274, 288, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b('"'), n.b(n.v(n.f("tabindex", t, e, 0))), n.b('"');
+            }), t.pop()), i.b("\n" + n), i.b("      "), i.s(i.f("tabindex", t, e, 1), t, e, 1, 0, 0, "") || i.b('"0"'), 
+            i.b(">"), i.b(i.v(i.f("label", t, e, 0))), i.b("</a>"), i.b("\n" + n), i.b("  </div>"), 
+            i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/Dialog", [ "jquery", "nbd/View/Entity", "nbd/util/extend", "hgn!templates/dialog", "hgn!templates/button" ], function(t, e, n, i, r) {
+    "use strict";
+    var o = e.extend({
+        mustache: {},
+        template: function(e) {
+            return t(i(e, n({
+                content: this.mustache.template,
+                button: r.template
+            }, this.partials)));
+        },
+        rendered: function() {
+            this.$view.on("click", ".js-close, .close, .form-button-close, .form-button-cancel", this.hide.bind(this)).on("click", ".form-button-disabled", !1);
+        },
+        position: function() {},
+        show: function() {
+            return this.trigger("show", this.$view);
+        },
+        hide: function() {
+            return this.trigger("hide", this.$view);
+        },
+        toggle: function() {
+            var t = this.$view.is(":visible");
+            return this[t ? "hide" : "show"]();
+        }
+    });
+    return o;
+}), define("be/View/Dialog/Layover", [ "jquery", "be/View/Dialog" ], function(t, e) {
+    "use strict";
+    var n = e.extend({
+        destroy: function() {
+            this.hide(), this._super();
+        },
+        template: function(e) {
+            return this._super(t.extend({
+                dialogType: "layover",
+                layover: !0,
+                toolbar: !0
+            }, e));
+        },
+        rendered: function() {
+            this._super(), this.show();
+        },
+        show: function() {
+            return this.$view ? (this.scrollTop = this.scrollTop || t(window).scrollTop(), t("#site-content").hide(), 
+            t("html").addClass("overflow-hidden"), this.$view.show(), this._super()) : void 0;
+        },
+        hide: function() {
+            return this.$view ? (t("#site-content").show(), t("html").removeClass("overflow-hidden"), 
+            window.scrollTo(0, this.scrollTop), delete this.scrollTop, this.$view.hide(), this._super()) : void 0;
+        }
+    });
+    return n;
+}), define("lib/infinitescroll", [ "jquery", "log" ], function(t, e) {
+    "use strict";
+    function n(t) {
+        t();
+    }
+    function i(t) {
+        var e, n;
+        return t.is(s) ? (e = window.innerHeight || s.height(), n = a.height() - e - s.scrollTop()) : (e = t.prop("clientHeight"), 
+        n = t.prop("scrollHeight") - e - t.scrollTop()), n / e;
+    }
+    function r(e) {
+        var r = "window" === e ? s : t(e);
+        return function() {
+            var t, o = i(r);
+            for (t in l[e]) o <= Number(t) && l[e][t].wrapped.forEach(n);
+        };
+    }
+    function o(n, i, o) {
+        function a() {
+            if (!a.blocking) {
+                a.blocking = !0;
+                var t = i.apply(null, arguments);
+                t && "function" == typeof t.then ? t.then(function() {
+                    a.blocking = !1, c[o]();
+                }, function(t) {
+                    t instanceof Error && e.warn(t);
+                }) : a.blocking = !1;
+            }
+        }
+        "function" == typeof n && (o = i, i = n, n = 1), o = o || "window", n = Number(n).toString();
+        var b, d = "window" === o ? s : t(o);
+        l[o] || (l[o] = {}, c[o] = r(o), d.on("scroll", c[o])), b = l[o][n], b || (b = l[o][n] = {
+            wrapped: [],
+            original: []
+        }), b.original.push(i), b.wrapped.push(a), c[o]();
+    }
+    var s = t(window), a = t(document), c = {}, l = {};
+    return o.remove = function(e, n) {
+        n = n || "window";
+        var i, r, o, a = "window" === n ? s : t(n);
+        for (i in l[n]) r = l[n][i], o = r.original.indexOf(e), ~o && (r.original.splice(o, 1), 
+        r.wrapped.splice(o, 1), r.original.length || delete l[n][i]);
+        Object.keys(l[n]).length || (a.off("scroll", c[n]), delete l[n]);
+    }, o.check = function(t) {
+        t = t || "window", c[t]();
+    }, o;
+}), define("require/hgn!templates/html", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b(i.t(i.f("html", t, e, 0))), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/bell/dialog", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="activity-container-wrap">'), i.b("\n" + n), 
+            i.b('  <div class="bell-section propositions-section js-propositions"></div>'), 
+            i.b("\n" + n), i.b('  <div class="bell-section notifications-section js-notifications"></div>'), 
+            i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/trait/bell", [ "jquery", "nbd/util/pipe", "lib/infinitescroll", "be/spinner", "hgn!templates/html", "hgn!templates/bell/dialog" ], function(t, e, n, i, r, o) {
+    "use strict";
+    var s = 0;
+    return {
+        mustache: r,
+        selector: ".js-notifications-nav-menu .popup-content .activity-container-wrap",
+        templateData: function() {
+            return {
+                title: "Notifications",
+                classes: [ "notifications", "timeline-container", "js-notifications-nav-menu" ],
+                html: o
+            };
+        },
+        rendered: function() {
+            this._super(), this._bindScroll(), this._bindInfiniteScroll();
+        },
+        renderNotifications: function(t) {
+            this.$notifications || (this.$notifications = this.$view.find(".js-notifications"), 
+            t.render(this.$notifications));
+        },
+        renderPropositions: function(t) {
+            this.$propositions || (this.$propositions = this.$view.find(".js-propositions"), 
+            t.render(this.$propositions));
+        },
+        _bindInfiniteScroll: function() {
+            n(.5, function() {
+                this._controller.more();
+            }.bind(this), this.selector);
+        },
+        _bindScroll: function() {
+            this.$view.find(this.selector).on("scroll", function() {
+                this.$headers = this.$headers || this.$view.find(".js-bell-title").toArray();
+                var e = this.$headers.map(function(e) {
+                    var n = t(e), i = n.position();
+                    return n.is(".sticky") && (i = n.siblings(".js-bell-title-dummy").position()), {
+                        $el: n,
+                        offsetTop: i.top
+                    };
+                }.bind(this)).filter(function(t) {
+                    return t.$el.is(":visible");
+                }).reduce(function(t, e) {
+                    var n;
+                    return t ? n = e.offsetTop > s ? t : e.offsetTop > t.offsetTop ? e : t : e;
+                });
+                e.$el.is(".js-bell-title-dummy") || (this.$currentHeader && this.$currentHeader.length && this.$currentHeader.removeClass("sticky"), 
+                e.$el.addClass("sticky"), this.$currentHeader = e.$el);
+            }.bind(this));
+        }
+    };
+}), define("be/View/Dialog/Layover/Bell", [ "be/View/Dialog/Layover", "be/trait/bell" ], function(t, e) {
+    "use strict";
+    var n = t.extend(e);
+    return n;
+}), define("be/View/Dialog/Menu", [ "jquery", "be/View/Dialog", "nbd/util/async", "jquery/ui/position" ], function(t, e, n) {
+    "use strict";
+    var i = e.extend({
+        init: function() {
+            this._super.apply(this, arguments), this.dismiss = function(t) {
+                t.originalEvent.data !== this && (this.hide(), t.preventDefault());
+            }.bind(this);
+        },
+        destroy: function() {
+            this._unbind(), this._super.apply(this, arguments);
+        },
+        template: function(e) {
+            return this._super(t.extend({
+                dialogType: "menu",
+                blocking: !1,
+                hide_toolbar: !0
+            }, e));
+        },
+        rendered: function() {
+            this._super();
+            var t = this;
+            this.$view.on("click touchend", function(e) {
+                e.originalEvent.data = t;
+            });
+        },
+        _bind: function() {
+            t("html").on("click touchend", this.dismiss);
+        },
+        _unbind: function() {
+            t("html").off("click touchend", this.dismiss);
+        },
+        position: function(e, n) {
+            if (this.$view) {
+                e && (this._lastContext = e);
+                var i = {
+                    my: "left top",
+                    at: "left bottom+10",
+                    of: this._lastContext,
+                    collision: "flipfit"
+                };
+                this.$view.position(t.extend(i, n));
+            }
+        },
+        show: function() {
+            return this.$view ? (n(this._bind.bind(this)), this.$view.addClass("shown"), this._super()) : void 0;
+        },
+        hide: function() {
+            return this.$view ? (this._unbind(), this.$view.removeClass("shown"), this._super()) : void 0;
+        },
+        toggle: function() {
+            return this[this.$view.hasClass("shown") ? "hide" : "show"]();
+        }
+    });
+    return i;
+}), define("be/View/Dialog/Menu/Bell", [ "nbd/util/extend", "be/View/Dialog/Menu", "be/trait/bell" ], function(t, e, n) {
+    "use strict";
+    var i, r = "107", o = "10", s = "5";
+    return i = e.extend(t({
+        position: function(t) {
+            return this._super(t, {
+                my: "left-" + r + " top-" + o,
+                at: "center bottom+" + s,
+                collision: "none"
+            });
+        }
+    }, n));
+}), define("be/Controller/Dialog/Bell", [ "nbd/trait/pubsub", "be/Controller/Dialog/Roulette", "be/Controller/Notifications", "be/Controller/Propositions", "be/View/Dialog/Layover/Bell", "be/View/Dialog/Menu/Bell" ], function(t, e, n, i, r, o) {
+    "use strict";
+    var s = e.extend({
+        init: function() {
+            this._notifications = new n(), this.listenTo(this._notifications, "sync", this._syncCount), 
+            this._super.apply(this, arguments);
+        },
+        _initView: function() {
+            this._super.apply(this, arguments), this.listenTo(this._view, "show", this.renderSections).listenTo(this._view, "show", this.updateSections).listenTo(this._view, "show", function() {
+                this._notifications.clear();
+            });
+        },
+        renderSections: function() {
+            this._view.renderNotifications(this._notifications);
+        },
+        updateSections: function() {
+            this._notifications.update();
+        },
+        _syncCount: function() {
+            this.trigger("sync", this._count);
+        },
+        more: function() {
+            this._notifications.more();
+        }
+    }, {
+        VIEW_CLASS: {
+            phone: r,
+            tablet: o,
+            desktop: o
+        }
+    }).mixin(t), a = s.extend({
+        _count: 0,
+        init: function() {
+            this._propositions = new i(), this.listenTo(this._propositions, "sync", function(t) {
+                this._count += t, this._syncCount();
+            }).listenTo(this._propositions, "removed", function() {
+                this._count = Math.max(this._count - 1, 0), this._syncCount();
+            }), this._super.apply(this, arguments);
+        },
+        renderSections: function() {
+            this._super(), this._view.renderPropositions(this._propositions);
+        },
+        updateSections: function() {
+            this._super(), this._propositions.update();
+        },
+        more: function() {
+            this._super(), this._propositions.more();
+        }
+    });
+    return a;
+}), define("be/bell", [ "jquery", "has", "lib/xhr", "be/Controller/Dialog/Bell" ], function(t, e, n, i) {
+    "use strict";
+    var r, o = "/v2/notifications/count", s = "bell-count-v1";
+    return r = {
+        init: function(n) {
+            var r = t(".js-bell-menu", n);
+            r.length && (this.$bell = r, this._actionSet = s, this._dialog = new i(), this._dialog.setContext(r), 
+            this._dialog.on("sync", function(t) {
+                this.update(t || 0);
+            }, this), e("localstorage") && this.update(window.sessionStorage.getItem("notifications") || 0), 
+            this._sync());
+        },
+        destroy: function() {
+            this._dialog && this._dialog.destroy(), clearInterval(this._interval);
+        },
+        update: function(t) {
+            var e = 0 === +t;
+            this.$bell.toggleClass("unread", !e).find(".notifications-count").text(t), this._dialog.block = e;
+        },
+        _sync: function() {
+            return n({
+                url: o,
+                type: "get",
+                data: {
+                    action_set: this._actionSet
+                }
+            }).then(function(t) {
+                return e("localstorage") && window.sessionStorage.setItem("notifications", t.count), 
+                t.count;
+            }).then(r.update.bind(r));
+        }
+    };
+}), define("be/Controller/Dialog", [ "nbd/Controller/Responsive" ], function(t) {
+    "use strict";
+    return t;
+}), define("lib/keyboard", [ "jquery", "nbd/Class" ], function(t, e) {
+    "use strict";
+    var n = new (e.extend({
+        listeners: null,
+        globals: null,
+        ignoredElements: {
+            INPUT: !0,
+            TEXTAREA: !0
+        },
+        init: function(e) {
+            e = e || {}, this.globals = e.global || {}, this.listeners = [], this.ignoredElements = t.extend({}, this.ignoredElements), 
+            this.addListener = this.addListener.bind(this), this.appendListener = this.appendListener.bind(this), 
+            this.removeListener = this.removeListener.bind(this), this.addGlobal = this.addGlobal.bind(this), 
+            this.keydownHandler = this.keydownHandler.bind(this), t(document.body).on("keydown", this.keydownHandler);
+        },
+        destroy: function() {
+            t(document.body).off("keydown", this.keydownHandler);
+        },
+        translate: function(e, n) {
+            function i(t, e) {
+                return function(n) {
+                    var i = t.map(function(t) {
+                        return t ? t.toLowerCase() + "Key" : null;
+                    }).reduce(function(t, e) {
+                        return t && (e ? n.originalEvent[e] : !0);
+                    }, !0);
+                    return i ? e.call(this, n) : void 0;
+                };
+            }
+            var r, o, s, a = /^((?:(?:meta|shift|ctrl|alt)-)*)(.+)$/i;
+            n = n || {};
+            for (r in e) if (e.hasOwnProperty(r)) {
+                if (s = a.exec(r), !s) continue;
+                o = this.constructor.keyCodes[s[2].toLowerCase()], o && (n[o] = n[o] || t.Callbacks("unique stopOnFalse"), 
+                n[o].add(s[1] ? i(s[1].split("-"), e[r]) : e[r]));
+            }
+            return n;
+        },
+        addListener: function(t) {
+            this.listeners.push(this.translate(t));
+        },
+        appendListener: function(t) {
+            this.listeners.length || this.listeners.push({}), this.translate(t, this.listeners[this.listeners.length - 1]);
+        },
+        removeListener: function() {
+            this.listeners.pop();
+        },
+        addGlobal: function(t) {
+            this.translate(t, this.globals);
+        },
+        keydownHandler: function(t) {
+            var e = this.listeners.length ? this.listeners[this.listeners.length - 1] : {};
+            (e.hasOwnProperty(t.which) || this.globals.hasOwnProperty(t.which)) && (!e[t.which] || !this.constructor.bypassCodes[t.which] && this.ignoredElements[t.target.tagName] || e[t.which].fire(t), 
+            this.globals[t.which] && this.globals[t.which].fire(t));
+        },
+        keyupHandler: function() {}
+    }, {
+        keyCodes: {
+            backspace: 8,
+            tab: 9,
+            enter: 13,
+            shift: 16,
+            ctrl: 17,
+            alt: 18,
+            pause: 19,
+            capslock: 20,
+            escape: 27,
+            pageup: 33,
+            pagedown: 34,
+            end: 35,
+            home: 36,
+            left: 37,
+            up: 38,
+            right: 39,
+            down: 40,
+            insert: 45,
+            "delete": 46,
+            "0": 48,
+            "1": 49,
+            "2": 50,
+            "3": 51,
+            "4": 52,
+            "5": 53,
+            "6": 54,
+            "7": 55,
+            "8": 56,
+            "9": 57,
+            a: 65,
+            b: 66,
+            c: 67,
+            d: 68,
+            e: 69,
+            f: 70,
+            g: 71,
+            h: 72,
+            i: 73,
+            j: 74,
+            k: 75,
+            l: 76,
+            m: 77,
+            n: 78,
+            o: 79,
+            p: 80,
+            q: 81,
+            r: 82,
+            s: 83,
+            t: 84,
+            u: 85,
+            v: 86,
+            w: 87,
+            x: 88,
+            y: 89,
+            z: 90,
+            f1: 112,
+            f2: 113,
+            f3: 114,
+            f4: 115,
+            f5: 116,
+            f6: 117,
+            f7: 118,
+            f8: 119,
+            f9: 120,
+            f10: 121,
+            f11: 122,
+            f12: 123,
+            ";": 186,
+            "=": 187,
+            ",": 188,
+            "-": 189,
+            ".": 190,
+            "/": 191,
+            "`": 192,
+            "[": 219,
+            "\\": 220,
+            "]": 221,
+            "'": 222
+        },
+        bypassCodes: {
+            "16": !0,
+            "17": !0,
+            "18": !0,
+            "19": !0,
+            "20": !0,
+            "27": !0,
+            "45": !0,
+            "112": !0,
+            "113": !0,
+            "114": !0,
+            "115": !0,
+            "116": !0,
+            "117": !0,
+            "118": !0,
+            "119": !0,
+            "120": !0,
+            "121": !0,
+            "122": !0,
+            "123": !0
+        }
+    }))();
+    return {
+        on: n.addListener,
+        off: n.removeListener,
+        add: n.appendListener,
+        global: n.addGlobal
+    };
+}), define("be/View/Dialog/Popup", [ "nbd/util/extend", "be/View/Dialog", "lib/keyboard" ], function(t, e, n) {
+    "use strict";
+    var i = e.extend({
+        template: function(e) {
+            return this._super(t({
+                dialogType: "desktop",
+                blocking: !0,
+                toolbar: !0
+            }, e));
+        },
+        render: function() {
+            return i.Z_INDEX += 2, this._zIndex = i.Z_INDEX, this._super.apply(this, arguments);
+        },
+        rendered: function() {
+            this._super(), this.$view.filter(".blocking-div").on("click", this.hide.bind(this));
+        },
+        position: function() {
+            if (this.$view) {
+                var t = this.$view.filter(".popup"), e = window.innerHeight || document.documentElement.offsetHeight, n = (e - t.outerHeight()) / 2;
+                t.css({
+                    "z-index": this._zIndex,
+                    "margin-left": -~~(t.width() / 2) + "px",
+                    top: Math.max(0, n)
+                }).addClass("shown"), this.$view.filter(".blocking-div").css("z-index", this._zIndex - 1);
+            }
+        },
+        show: function() {
+            return this.$view ? (n.on({
+                escape: this.hide.bind(this)
+            }), this.$view.parent().is(document.body) || this.$view.appendTo(document.body), 
+            this._super()) : void 0;
+        },
+        hide: function() {
+            return this.$view ? (n.off(), this.$view.detach(), this._super()) : void 0;
+        },
+        toggle: function() {
+            var t = this.$view.parent().is(document.body);
+            return this[t ? "hide" : "show"]();
+        }
+    }, {
+        Z_INDEX: 250
+    });
+    return i;
+}), define("be/Modal", [ "nbd/trait/promise", "nbd/util/extend", "be/Controller/Dialog", "be/View/Dialog/Layover", "be/View/Dialog/Popup", "hgn!templates/html" ], function(t, e, n, i, r, o) {
+    "use strict";
+    var s = {
+        mustache: o,
+        templateData: function() {
+            return e({
+                buttons: [ {
+                    label: "Okay",
+                    classes: [ "form-button-default", "js-confirm" ]
+                }, {
+                    label: "Cancel",
+                    classes: [ "form-button-cancel", "js-cancel" ]
+                } ]
+            }, this._model.data());
+        },
+        rendered: function() {
+            this._super(), this.$view.on("click", ".js-confirm", this.trigger.bind(this, "confirm")).on("click", ".js-cancel", this.trigger.bind(this, "cancel"));
+        }
+    }, a = i.extend(s), c = r.extend(s), l = n.extend({
+        init: function() {
+            this._super.apply(this, arguments), this._view.on("confirm", function() {
+                this.confirm.apply(this, arguments);
+            }, this).on("hide", function() {
+                this.cancel.apply(this, arguments);
+            }, this);
+        },
+        confirm: function() {
+            this.resolve();
+        },
+        cancel: function() {
+            this.reject();
+        },
+        render: function() {
+            this._super(document.body), this._view.position();
+        }
+    }, {
+        VIEW_CLASS: {
+            phone: a,
+            tablet: c,
+            desktop: c
+        }
+    }).mixin(t);
+    return l;
+}), define("be/modal/simple", [ "be/Modal" ], function(t) {
+    "use strict";
+    return function(e, n) {
+        var i = new t(e), r = i.destroy.bind(i);
+        return "function" == typeof n && (i.confirm = function o() {
+            function t() {
+                o.blocking = !1;
+            }
+            if (!o.blocking) {
+                o.blocking = !0;
+                var e = n();
+                e && "function" == typeof e.then ? e.then(i.resolve.bind(i)).then(t, t) : (i.resolve(e), 
+                t());
+            }
+        }), i.render(), i.then(r, r), i;
+    };
+}), define("inbox/lib/byLine", [], function() {
+    "use strict";
+    function t(t, e) {
+        return t.length < 3 ? t.join(e) : t[0] + e + (t.length - 1) + " others";
+    }
+    return t;
+}), define("inbox/Model/Message", [ "moment", "nbd/Model", "nbd/util/extend", "inbox/lib/byLine" ], function(t, e, n, i) {
+    "use strict";
+    function r(t) {
+        var e = [];
+        return t && (e = t.map(function(t) {
+            return {
+                image: t.images && t.images[s] || "",
+                name: t.display_name,
+                url: t.url,
+                id: t.id
+            };
+        })), e;
+    }
+    var o, s = 115;
+    return o = e.extend({
+        init: function(t) {
+            this._super(this.transform(t));
+        },
+        transform: function(e) {
+            var o = r(e.recipients), s = +e.unread_count || 0, a = t.unix(e.last_message_on), c = t().diff(a, "hours");
+            return n(e, {
+                byLine: i(o.map(function(t) {
+                    return t.name;
+                }), " and "),
+                message: e.last_message_part,
+                recipients: o,
+                unread: !!s,
+                unreadCount: s,
+                timestamp: c > 23 ? a.format("MMMM DD, YYYY") : a.fromNow()
+            });
+        }
+    });
+}), define("require/hgn!templates/inbox/dialog/main", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="bell-section activity-container-wrap">'), 
+            i.b("\n" + n), i.b('  <h2 class="bell-title notifications-title hide-phone sticky">'), 
+            i.b("\n" + n), i.b("    Your Messages"), i.b("\n" + n), i.b('    <span class="js-inbox-chrome bell-inbox-controls">'), 
+            i.b("\n" + n), i.b('      <a href="'), i.b(i.v(i.f("composeUrl", t, e, 0))), i.b('" class="bell-inbox-new-message">Compose</a>'), 
+            i.b("\n" + n), i.b('      <a href="'), i.b(i.v(i.f("indexUrl", t, e, 0))), i.b('" class="bell-inbox-view-all">View All</a>'), 
+            i.b("\n" + n), i.b("    </span>"), i.b("\n" + n), i.b("  </h2>"), i.b("\n" + n), 
+            i.b('  <h2 class="bell-title notifications-title hide-phone bell-title-dummy">Your Messages</h2>'), 
+            i.b("\n" + n), i.b('  <div class="activity-container js-inbox-container capped">'), 
+            i.b("\n" + n), i.b('    <ul class="js-inbox-list"></ul>'), i.b("\n" + n), i.b('    <a href="'), 
+            i.b(i.v(i.f("indexUrl", t, e, 0))), i.b('" class="js-show-all list-load-more">See all messages</a>'), 
+            i.b("\n" + n), i.b('    <div class="js-spin loading-spinner cfix"></div>'), i.b("\n" + n), 
+            i.b("  </div>"), i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/inbox/dialog/empty", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="inbox-empty">No messages in your inbox.</div>'), 
+            i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/inbox/list/message", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<li class="inbox-list-item preview-item'), i.s(i.f("unread", t, e, 1), t, e, 0, 50, 57, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" unread");
+            }), t.pop()), i.s(i.f("active", t, e, 1), t, e, 0, 79, 86, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b(" active");
+            }), t.pop()), i.b(' js-inbox-list-item" data-id="'), i.b(i.v(i.f("id", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('  <div class="form-item form-item-checkbox indicator checkbox">'), 
+            i.b("\n" + n), i.b('    <input type="checkbox" id="preview-'), i.b(i.v(i.f("id", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('    <label class="form-label" for="preview-'), i.b(i.v(i.f("id", t, e, 0))), 
+            i.b('">&nbsp;</label>'), i.b("\n" + n), i.b("  </div>"), i.b("\n" + n), i.b('  <div class="indicator unread-indicator"></div>'), 
+            i.b("\n" + n), i.b('  <div class="timestamp js-updating-timestamp" data-timestamp="'), 
+            i.b(i.v(i.f("last_message_on", t, e, 0))), i.b('">'), i.b(i.v(i.f("timestamp", t, e, 0))), 
+            i.b("</div>"), i.b("\n" + n), i.b('  <div class="info">'), i.b("\n" + n), i.s(i.f("isGroup", t, e, 1), t, e, 0, 513, 825, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('      <div class="inbox-image multiple-owners-grid">'), i.b("\n" + n), i.s(i.f("recipients", t, e, 1), t, e, 0, 590, 631, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                    i.b('          <img src="'), i.b(i.v(i.f("image", t, e, 0))), i.b('">'), i.b("\n" + n);
+                }), t.pop()), i.b("      </div>"), i.b("\n" + n), i.b('      <div class="user text-ellipsis">'), 
+                i.b("\n" + n), i.b("        "), i.b(i.v(i.f("byLine", t, e, 0))), i.b("\n" + n), 
+                i.b('        <span class="js-unread-count'), i.s(i.f("unread", t, e, 1), t, e, 1, 0, 0, "") || i.b(" hide"), 
+                i.b('">('), i.b(i.v(i.f("unreadCount", t, e, 0))), i.b(")</span>"), i.b("\n" + n), 
+                i.b("      </div>"), i.b("\n" + n);
+            }), t.pop()), i.b("\n" + n), i.s(i.f("isGroup", t, e, 1), t, e, 1, 0, 0, "") || i.s(i.d("recipients.0", t, e, 1), t, e, 0, 879, 1075, "{{ }}") && (i.rs(t, e, function(t, e, i) {
+                i.b('        <img src="'), i.b(i.v(i.f("image", t, e, 0))), i.b('" class="inbox-image">'), 
+                i.b("\n" + n), i.b('        <div class="user text-ellipsis">'), i.b(i.v(i.f("byLine", t, e, 0))), 
+                i.b(' <span class="js-unread-count'), i.s(i.f("unread", t, e, 1), t, e, 1, 0, 0, "") || i.b(" hide"), 
+                i.b('">('), i.b(i.v(i.f("unreadCount", t, e, 0))), i.b(")</span></div>"), i.b("\n" + n);
+            }), t.pop()), i.b('    <div class="message">'), i.s(i.f("is_reply", t, e, 1), t, e, 0, 1148, 1180, "{{ }}") && (i.rs(t, e, function(t, e, n) {
+                n.b('<span class="reply-icon"></span>');
+            }), t.pop()), i.b(i.v(i.f("message", t, e, 0))), i.b("</div>"), i.b("\n" + n), i.b("  </div>"), 
+            i.b("\n" + n), i.b("</li>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("require/hgn!templates/inbox/dialog/unverified", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b("<div>"), i.b("\n" + n), i.b("  You need to have a verified email address to access this feature.</br>"), 
+            i.b("\n" + n), i.b('  Haven\'t received a verification email yet? <a target="_blank" href="/account/settings">Click here.</a>'), 
+            i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/trait/inboxNav", [ "jquery", "moment", "nbd/util/extend", "be/modal/simple", "be/spinner", "inbox/Model/Message", "hgn!templates/html", "hgn!templates/inbox/dialog/main", "hgn!templates/inbox/dialog/empty", "hgn!templates/inbox/list/message", "hgn!templates/inbox/dialog/unverified" ], function(t, e, n, i, r, o, s, a, c, l, b) {
+    "use strict";
+    var d = t(document.body).hasClass("user-unverified"), u = "/inbox", p = u + "/compose";
+    return {
+        mustache: s,
+        templateData: function() {
+            var t = a({
+                indexUrl: u,
+                composeUrl: p
+            });
+            return {
+                title: "Inbox",
+                classes: [ "notifications", "inbox", "timeline-container", "js-inbox-nav-menu" ],
+                html: t
+            };
+        },
+        rendered: function() {
+            this._super(), this.$content = this.$view.find(".js-inbox-container"), this.$list = this.$view.find(".js-inbox-list"), 
+            this.$showAll = this.$view.find(".js-show-all"), this.spinner = r.init(this.$view).hide(), 
+            this._bindEvents();
+        },
+        loading: function() {
+            this.spinner && this.spinner.show();
+        },
+        loaded: function() {
+            this.spinner && this.spinner.hide();
+        },
+        add: function(t) {
+            t.forEach(function(t) {
+                var e = new o(t);
+                this.$list.append(this._renderMessage(e));
+            }.bind(this));
+        },
+        reset: function() {
+            this.$empty && (this.$empty.remove(), this.$empty = null), this.$list.empty();
+        },
+        empty: function() {
+            this.$empty = this.$empty || t(c()), this.$showAll.before(this.$empty);
+        },
+        _bindEvents: function() {
+            var e = this;
+            this.$list.on("click", "li", function() {
+                var n = t(this).data("id");
+                return d ? (e.hide(), void e._showUnverifiedWarningDialog()) : void (window.location.href = u + "/" + n);
+            }), this.$view.on("click", "a", function(t) {
+                d && (t.preventDefault(), e.hide(), e._showUnverifiedWarningDialog());
+            });
+        },
+        _renderMessage: function(t) {
+            var e = t.data();
+            return l(n(e, {
+                isGroup: e.recipients.length > 1
+            }));
+        },
+        _showUnverifiedWarningDialog: function() {
+            i({
+                title: "Please verify your email address",
+                html: b(),
+                buttons: [ {
+                    label: "Cancel",
+                    classes: [ "form-button-default", "js-confirm" ]
+                } ]
+            });
+        }
+    };
+}), define("be/View/Dialog/Menu/InboxNav", [ "nbd/util/extend", "be/View/Dialog/Menu", "be/trait/inboxNav" ], function(t, e, n) {
+    "use strict";
+    var i, r = "107", o = "10", s = "5";
+    return i = e.extend(t({
+        position: function(t) {
+            return this._super(t, {
+                my: "left-" + r + " top-" + o,
+                at: "center bottom+" + s,
+                collision: "none"
+            });
+        }
+    }, n));
+}), define("be/View/Dialog/Layover/InboxNav", [ "be/View/Dialog/Layover", "be/trait/inboxNav" ], function(t, e) {
+    "use strict";
+    var n = t.extend(e);
+    return n;
+}), define("inbox/lib/loader", [ "lib/xhr" ], function(t) {
+    "use strict";
+    function e(t) {
+        return function(e) {
+            var n = {};
+            if (!e) throw new Error("Response is not valid");
+            return n = e[t];
+        };
+    }
+    function n(e, n) {
+        return n = n || {}, t({
+            url: e,
+            type: "GET",
+            data: {
+                folder: n.folder,
+                offset_key: n.offsetKey,
+                q: n.query,
+                tag: n.tag
+            }
+        });
+    }
+    var i = "/v2/inbox", r = i + "/threads", o = i + "/threads/search", s = "/messages", a = "/v2/report/spam/thread", c = "/utilities/block", l = {
+        search: function(t) {
+            return n(o, t);
+        },
+        threads: function(t) {
+            return n(r, t);
+        },
+        pollThreads: function(e) {
+            return e = e || {}, t({
+                url: r,
+                type: "GET",
+                data: {
+                    folder: e.folder,
+                    polling_key: e.pollingKey,
+                    q: e.query,
+                    tag: e.tag
+                }
+            });
+        },
+        thread: function(n) {
+            return t({
+                url: r + "/" + n,
+                type: "GET"
+            }).then(e("thread"));
+        },
+        threadMessages: function(e, n) {
+            return t({
+                url: r + "/" + e + s,
+                type: "GET",
+                data: {
+                    offset_key: n
+                }
+            });
+        },
+        pollMessages: function(e, n) {
+            return t({
+                url: r + "/" + e + s,
+                type: "GET",
+                data: {
+                    polling_key: n
+                }
+            });
+        },
+        markRead: function(e) {
+            return t({
+                url: r + "/" + e,
+                type: "PATCH",
+                data: {
+                    is_read: 1
+                }
+            });
+        },
+        moveTo: function(e, n) {
+            return t({
+                url: r + "/" + e,
+                type: "PATCH",
+                data: {
+                    folder: n
+                }
+            });
+        },
+        markSpam: function(e) {
+            return t({
+                url: a + "/" + e,
+                type: "POST"
+            });
+        },
+        blockUser: function(e) {
+            return t({
+                url: c,
+                type: "post",
+                data: {
+                    user_id: e
+                }
+            });
+        },
+        deleteThreadForever: function(e) {
+            return t({
+                url: r + "/" + e,
+                type: "DELETE"
+            });
+        },
+        replyToThread: function(n, i) {
+            return t({
+                url: r + "/" + n + s,
+                type: "POST",
+                data: {
+                    message: i
+                }
+            }).then(e("message"));
+        },
+        markMessageRead: function(e, n) {
+            return t({
+                url: r + "/" + e + s + "/" + n,
+                type: "PATCH",
+                data: {
+                    is_read: 1
+                }
+            });
+        },
+        createNewThread: function(n, i) {
+            return t({
+                url: r,
+                type: "POST",
+                data: {
+                    recipients: n,
+                    message: i
+                }
+            }).then(e("thread"));
+        }
+    };
+    return l;
+}), define("be/Controller/Dialog/InboxNav", [ "nbd/trait/pubsub", "be/Controller/Dialog/Roulette", "be/View/Dialog/Menu/InboxNav", "be/View/Dialog/Layover/InboxNav", "inbox/lib/loader" ], function(t, e, n, i, r) {
+    "use strict";
+    var o = e.extend({
+        _initView: function() {
+            this._super.apply(this, arguments), this._view && this.listenTo(this._view, "show", this._refresh);
+        },
+        _refresh: function() {
+            this._view.loading(), r.threads().then(function(t) {
+                t = t.threads || [], this._view.loaded(), this._view.reset(), t.length ? this._view.add(t) : this._view.empty();
+            }.bind(this), function() {
+                this._view.loaded(), this._view.reset(), this._view.empty();
+            }.bind(this));
+        }
+    }, {
+        VIEW_CLASS: {
+            phone: i,
+            tablet: n,
+            desktop: n
+        }
+    }).mixin(t);
+    return o;
+}), define("be/inboxNav", [ "jquery", "has", "nbd/util/deparam", "lib/xhr", "be/Controller/Dialog/InboxNav" ], function(t, e, n, i, r) {
+    "use strict";
+    var o, s = "/v2/notifications/count", a = "inbox-v1";
+    return o = {
+        init: function(n) {
+            var i = t(".js-email-menu", n);
+            i.length && (this.$message = i, this._dialog = new r(), this._dialog.setContext(i), 
+            e("localstorage") && this.update(window.sessionStorage.getItem("message-notifications") || 0), 
+            this._sync());
+        },
+        update: function(t) {
+            var e = 0 === +t;
+            this.$message.toggleClass("unread", !e).find(".notifications-count").text(t), this._dialog.block = e;
+        },
+        _sync: function() {
+            return i({
+                url: s,
+                type: "get",
+                data: {
+                    action_set: a
+                }
+            }).then(function(t) {
+                return e("localstorage") && window.sessionStorage.setItem("message-notifications", t.count), 
+                t.count;
+            }).then(o.update.bind(o));
+        }
+    };
+}), define("wip/createloader", [ "nbd/trait/promise", "be/modal/simple" ], function(t, e) {
+    "use strict";
+    return function() {
+        var n = new t();
+        return require([ "wip/create" ], n.resolve.bind(n), function() {
+            e({
+                title: "There was a problem with your request",
+                html: "Please refresh the page to try again.",
+                buttons: [ {
+                    label: "Close",
+                    classes: [ "form-button-default", "js-close" ]
+                } ]
+            });
+        }), n;
+    };
+}), define("require/hgn!templates/addWork", [ "hogan" ], function(t) {
+    var e = new t.Template({
+        code: function(t, e, n) {
+            var i = this;
+            return i.b(n = n || ""), i.b('<div class="new-work-body cfix">'), i.b("\n" + n), 
+            i.b('  <a id="activity-new-work-project" class="new-work-link-wrap" href="'), i.b(i.v(i.f("projectUrl", t, e, 0))), 
+            i.b('">'), i.b("\n" + n), i.b('    <span class="new-work-link-icon"></span>'), i.b("\n" + n), 
+            i.b('    <span class="new-work-link">Add Project</span>'), i.b("\n" + n), i.b("  </a>"), 
+            i.b("\n" + n), i.b('  <span id="activity-new-work-wip" class="new-work-link-wrap wip-action wip-action-create fake-link js-wip-create">'), 
+            i.b("\n" + n), i.b('    <span class="new-work-link-icon"></span>'), i.b("\n" + n), 
+            i.b('    <span class="new-work-link">Add Work in Progress</span>'), i.b("\n" + n), 
+            i.b("  </span>"), i.b("\n" + n), i.b("</div>"), i.b("\n"), i.fl();
+        },
+        partials: {},
+        subs: {}
+    }, "", t), n = function(t, e) {
+        for (var n in e) t[n] = e[n];
+        return t;
+    }, i = {
+        "": null
+    }, r = function() {
+        return e.render.apply(e, arguments);
+    };
+    return e.ri = function(t, e, r) {
+        return this.r(t, n(i, e), r);
+    }, r.template = e, r;
+}), define("be/View/Menu/AddWork", [ "jquery", "be/View/Dialog/Menu", "wip/createloader", "hgn!templates/addWork" ], function(t, e, n, i) {
+    "use strict";
+    var r = e.extend({
+        mustache: i,
+        attachment: ".js-nav-primary",
+        templateData: function() {
+            return {
+                classes: [ "new-work-menu" ],
+                projectUrl: "/portfolio/editor"
+            };
+        },
+        position: function(t) {
+            return this._super(t, {
+                my: "left top",
+                at: "left bottom",
+                collision: "none"
+            });
+        },
+        rendered: function() {
+            this._super(), this.bindEvents();
+        },
+        bindEvents: function() {
+            this.$view.on("click", ".js-wip-create", function() {
+                this.hide(), n().then(function(t) {
+                    t.render();
+                });
+            }.bind(this));
+        }
+    });
+    return r;
+}), define("be/Controller/Dialog/AddWork", [ "be/Controller/Dialog/Roulette", "be/View/Menu/AddWork" ], function(t, e) {
+    "use strict";
+    var n = t.extend({}, {
+        VIEW_CLASS: {
+            desktop: e
+        }
+    });
+    return n;
+}), require([ "page_constants", "jquery", "has", "nbd/event", "lib/xhr", "be/bell", "be/inboxNav", "be/Controller/Dialog/AddWork", "jquery/plugins/jquery.hovermenu" ], function(t, e, n, i, r, o, s, a) {
+    "use strict";
+    function c(t) {
+        t && t.length && t.find(".js-nav-basement-submenu").each(function() {
+            var t = e(this);
+            t.closest(".nav-item").hoverMenu(t, {
+                container_position: "relative"
+            }), n("touch") && t.siblings(".nav-link").removeAttr("href");
+        });
+    }
+    function l(t) {
+        if (t && t.length) {
+            var e = t, n = e.find(".form-searchi, .js-search, .js-nav-search-form-input"), i = e.find(".js-nav-search");
+            i.on("click", function() {
+                n.trigger("focus");
+            }), e.on("submit", function(t) {
+                t.preventDefault(), window.location.assign(e.attr("action") + "?" + e.serialize());
+            }), n.on("focus", function() {
+                i.addClass("active"), u.addClass("search-active");
+            }).on("blur", function() {
+                i.toggleClass("active", !!this.value), u.toggleClass("search-active", !!this.value);
+            });
+        }
+    }
+    function b(t) {
+        i.on("profile.imagesrc", function(e) {
+            "profile_image" === e.entity && t.find(".js-profile-image-50").attr("src", e[50]);
+        });
+    }
+    function d() {
+        c(e("#navmenui-primary")), l(e(".js-nav-search-form")), b(u), p.length && new a().setContext(p), 
+        s.init(), o.init();
+    }
+    var u = e(".js-nav-primary"), p = e(".js-new-work-button");
+    d();
+}), define("nav", function() {});
+;define("lib/xhr", [ "jquery", "nbd/trait/promise" ], function(n, e) {
+    "use strict";
+    return function() {
+        var o, i = new e(), t = n.ajax.apply(n, arguments);
+        return i.resolve(t), o = i.thenable(), o.abort = t.abort, o;
+    };
+}), define("be/xhr", [ "lib/xhr", "nbd/trait/promise" ], function(n, e) {
+    "use strict";
+    function o(n) {
+        var o = new e();
+        return require([ "auth/activatePopup" ], o.resolve.bind(o), function() {}), o.then(function(e) {
+            return e(n);
+        });
+    }
+    return function(e) {
+        var i, t;
+        return t = n(e), i = t.then(null, function(t) {
+            return o(t).then(function() {
+                var o = n(e);
+                return o.then(function() {
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 500);
+                }), i.abort = o.abort, o;
+            });
+        }), i.abort = t.abort, i;
+    };
+}), require([ "page_constants", "page_config", "jquery", "be/login", "be/logout", "be/xhr" ], function(n, e, o, i, t, r) {
+    "use strict";
+    function a() {
+        function e() {
+            i.removeClass("wait"), t.openSection && t.openSection("profile");
+        }
+        var i = o(document.body), t = {};
+        require([ n.GLOBALNAV.URLS.JS, "css!" + n.GLOBALNAV.URLS.CSS ], function() {
+            t = new window.AdobeGlobalNav({
+                adobeid: window.adobeid,
+                behanceProfile: void 0,
+                sections: [ "profile" ]
+            });
+        }, function() {}), i.on("click", ".js-globalnav-layover", function(o) {
+            i.addClass("wait"), require([ n.TYPEKIT.URL + n.TYPEKIT.KIT_IDS.ADOBE + ".js" ], function() {
+                try {
+                    window.Typekit.load();
+                } catch (n) {}
+                e();
+            }, e), o.preventDefault();
+        });
+    }
+    function u() {
+        if (n.SSO.REDIRECT_URI) return n.SSO.REDIRECT_URI + c();
+        var e = window.location;
+        return e.protocol + "//" + e.host + e.pathname + c(e.search) + e.hash;
+    }
+    function c(e) {
+        if (e = e || "", e.indexOf(n.SSO.QS_IMS_SIGNIN_ATTEMPT) > -1) return e;
+        var o = n.SSO.QS_IMS_SIGNIN_ATTEMPT, i = 0 === e.indexOf("?") ? "&" : "?";
+        return e + i + o + "=1";
+    }
+    var d = !1;
+    window.adobeid = {
+        uses_redirect_mode: !0,
+        uses_modal_mode: !1,
+        uses_single_log_out: !0,
+        api_parameters: {
+            authorize: {
+                state: {
+                    ac: n.SSO.OMNITURE_AC_STATE
+                }
+            }
+        },
+        scope: n.SSO.SCOPES.join(","),
+        onProfile: function(e) {
+            e || !i.hasToken() || n.SSO.IGNORE_COOKIE_UPDATE || (d = !0);
+        },
+        onAccessToken: function(n) {
+            i.setToken(n);
+        },
+        onReady: function() {
+            return d ? void t(!0) : (a(), void o(document.body).on("click", ".js-adobeid-signup", function(e) {
+                if (e.preventDefault(), i.hasToken()) return void r({
+                    url: n.SSO.URLS.AUTH_CHECK
+                }).then(function() {
+                    window.location.reload();
+                });
+                var t = o(this).data("adobeid-signup-destination"), a = n.SSO.URLS.LOGIN;
+                t && (a += "?destination=" + t), i.clearLoggedOutCookie(), window.adobeIMS.signUp({
+                    redirect_uri: a
+                });
+            }).on("click", ".js-adobeid-signin", function(n) {
+                i.clearLoggedOutCookie(), window.adobeIMS.signIn({
+                    redirect_uri: u()
+                }), n.preventDefault();
+            }).on("click", ".js-adobeid-signout", function(n) {
+                t(), n.preventDefault();
+            }));
+        }
+    }, require([ n.SSO.URLS.IMS ], function() {}, function() {});
+}), define("sso/config", function() {});
