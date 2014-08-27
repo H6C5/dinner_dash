@@ -1,9 +1,11 @@
 #selector_1 {
   background-image: url(home_back_02.jpg);
   background-size: cover;
-  min-height: 800px;
+  height: 1000px;
+
   margin-top: -35px
 }
+
 #right_box {
   float:right;
   width:33.333333%;
@@ -12,30 +14,58 @@
 
 #the_gravatar {
   float:left;
-  margin-right: 15px
+  margin-right: 15px;
 }
 
-#hello_customer {
+.xxl_hello{
+  font-size: xx-large
+}
+
+.l_hello{
+  font-size: large
+}
+
+.push_up {
+  margin-top: -55px
+}
+
+.hello_customer {
+  padding-top:53px;
   color: white;
-  font-size: large;
   font-weight: 500;
 }
-#hello_companion {
+.hello_companion {
   color: white;
   font-weight: lighter;
   letter-spacing: 2px;
+  margin-top:-5px;
+  line-height:14px
 }
 #hello_bar {
   background: white;
   margin: 25px 0px 0px 0px;
 }
+
 .full {
   width: 100%;
-  margin-top:10px
+  margin-top:-70px
 }
 .category_box{
+  color: #b79808;
+  text-shadow: 2px 4px 3px rgba(0,0,0,0.3);
+  font-weight: 500;
+  background-image: url(back_blur_brown_02.png);
+  padding: 20px 0px 20px 0px;
   border-style:solid;
   border-color:white;
-  border-width:2px;
-  color: white;
+  border-width:1px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  margin: 20px 10px 20px 10px;
+}
+.gravatar {
+  margin-top:50px;
+  margin-bottom:50px;
+  background: ;
 }
