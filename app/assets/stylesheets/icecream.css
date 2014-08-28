@@ -1,11 +1,14 @@
 #selector_1 {
   background-image: url(home_back_02.jpg);
   background-size: cover;
-  height: 1000px;
-
+  height: 900px;
   margin-top: -35px
 }
-
+.logo {
+  background-image: url(logo.png);
+  min-height:200px;
+  background-size: cover;
+}
 #right_box {
   float:right;
   width:33.333333%;
@@ -16,13 +19,20 @@
   float:left;
   margin-right: 15px;
 }
-
+.user_widget {
+  margin-bottom:50px;
+}
 .xxl_hello{
-  font-size: xx-large
+  font-size: xx-large;
+}
+
+.xl_hello{
+  font-size: x-large;
+  line-height: 30px
 }
 
 .l_hello{
-  font-size: large
+  font-size: large;
 }
 
 .push_up {
@@ -50,22 +60,64 @@
   width: 100%;
   margin-top:-70px
 }
+.map_box {
+  float:right;
+
+}
+.map_text{
+  color:white;
+  font-size:large;
+  margin-top:-50px;
+}
 .category_box{
   color: #b79808;
   text-shadow: 2px 4px 3px rgba(0,0,0,0.3);
   font-weight: 500;
   background-image: url(back_blur_brown_02.png);
-  padding: 20px 0px 20px 0px;
   border-style:solid;
-  border-color:white;
+  border-color:#c7561f;
   border-width:1px;
   -webkit-border-radius: 10px;
   -moz-border-radius: 10px;
   border-radius: 10px;
-  margin: 20px 10px 20px 10px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin-left:5%;
+  padding: 40px 0px 40px 0px;
+  max-height:112px;
 }
 .gravatar {
   margin-top:50px;
   margin-bottom:50px;
   background: ;
+}
+.map_area {
+  padding-bottom:100px;
+  padding-top:405px;
+}
+.find_area {
+  background:;
+  padding: 5px;
+  font-size:x-large;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+}
+.box_front_text {
+  background: black;
+  opacity: 0.7;
+  width:100%;
+  min-height:170px;
+  z-index: -1;
+  margin-top:72px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+}
+.front_text {
+  color: white;
+  opacity:0.7;
+  margin-top:-150px;
+  padding-right:30px;
+  padding-left: 30px;
 }
